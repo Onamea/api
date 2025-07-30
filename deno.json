@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-env --unstable-kv --watch server.ts",
+    "cleardb": "deno run --unstable-kv scripts/clearKv.ts",
+    "seeddb": "deno run --unstable-kv scripts/seedKv.ts"
+  },
+  "imports": {
+    "oak": "https://deno.land/x/oak@v12.6.1/mod.ts"
+  }
+}
