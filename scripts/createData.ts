@@ -1,7 +1,5 @@
-import { getPublicKey } from "jsr:@noble/secp256k1@2.3.0"
-import { publicKeyToPrimaryKey } from "../vanice-utils/PublicKey.ts"
-import { sign, verify } from "../vanice-utils/sign.ts"
-import { primaryKeyToFingerprint } from "../vanice-utils/PrimaryKey.ts"
+import { getPublicKey } from "@noble/secp256k1"
+import { primaryKeyToFingerprint, publicKeyToPrimaryKey, sign, verify } from "@vanice/types"
 
 const privateKey = new Uint8Array([
    30,  38, 118, 159, 239, 195,  62,   6,

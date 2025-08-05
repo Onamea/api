@@ -1,6 +1,5 @@
 import isObject from "./utils/isObject.ts"
-import { type PrimaryKey, type Name, isAcceptedName, isPrimaryKey, isNameOrFingerprintedName, Fingerprint, primaryKeyToFingerprint, PrimaryChars, toPrimaryChars } from "../vanice-utils/PrimaryKey.ts"
-import { isSignature, type Signature, verify } from "../vanice-utils/sign.ts"
+import { type PrimaryKey, type Name, type Signature, isAcceptedName, isPrimaryKey, isNameOrFingerprintedName, Fingerprint, primaryKeyToFingerprint, PrimaryChars, toPrimaryChars, isSignature, verify } from "@vanice/types"
 
 //type Epoch = number
 

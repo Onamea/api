@@ -1,7 +1,7 @@
 import { type Context, type RouterContext, Application, Router } from "https://deno.land/x/oak/mod.ts"
 import meData from "./me.json" with { type: "json" }
 import { type ExtendedData, extendData, validateData } from "./lib/Data.ts"
-import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName, toPrimaryChars } from "./vanice-utils/PrimaryKey.ts"
+import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName, toPrimaryChars } from "@vanice/types"
 
 // Initialize KV database
 const kv = await Deno.openKv()

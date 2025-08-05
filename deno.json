@@ -5,6 +5,8 @@
     "seeddb": "deno run --unstable-kv scripts/seedKv.ts"
   },
   "imports": {
+    "@vanice/types": "jsr:@vanice/types@^0.1.2",
+    "@noble/secp256k1": "jsr:@noble/secp256k1@^2.3.0",
     "oak": "https://deno.land/x/oak@v12.6.1/mod.ts"
   }
 }
