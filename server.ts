@@ -1,10 +1,9 @@
 import { type Context, type RouterContext, Application, Router } from "https://deno.land/x/oak/mod.ts"
+// TODO: Move to config/env and own file
 import meData from "./me.json" with { type: "json" }
 import { type ExtendedData, extendData, validateData } from "./lib/Data.ts"
-import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName, toPrimaryChars } from "@vanice/types"
-
-// Initialize KV database
-const kv = await Deno.openKv()
+import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
+import { retrieveAll, retrieveByName, insert } from "./lib/db/kv.ts"
 
 // Define route paths
 const ROUTES = {
@@ -30,14 +29,7 @@ type KVData = {
 
 // GET /
 router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => {
-  const entries = kv.list({ prefix: ["vanice"] })
-  const values: KVData[] = []
-  for await (const entry of entries) {
-    values.push(entry as unknown as KVData)
-  }
-  // sort by primary key
-  values.sort((a, b) => a.key[1].localeCompare(b.key[1]))
-  ctx.response.body = values
+  ctx.response.body = await retrieveAll()
 })
 
 // GET /name/{vanity_name}
@@ -49,16 +41,7 @@ router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NA
     ctx.response.body = { error: "Invalid param: name" }
     return
   }
-  const primaryName = toPrimaryChars(name)
-  const entries = kv.list({ prefix: ["vanice", primaryName] })
-  const values = []
-  for await (const entry of entries) {
-    const data = entry.value as ExtendedData
-    if (fingerprint === undefined || data.fingerprint.startsWith(fingerprint)) {
-      values.push(data)
-    }
-  }
-  ctx.response.body = values
+  ctx.response.body = await retrieveByName(name, fingerprint)
 })
 
 // GET /me
@@ -77,9 +60,7 @@ router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const isValid = validateData(data)
   if (isValid) {
     const extendedData = await extendData(data)
-    const { primaryName, primaryKey } = extendedData
-    const key = ["vanice", primaryName, primaryKey]
-    await kv.set(key, extendedData)
+    await insert(extendedData)
     ctx.response.body = extendedData
   } else {
     ctx.response.status = 400

@@ -2,7 +2,6 @@
   "version": "5",
   "specifiers": {
     "jsr:@noble/hashes@^1.8.0": "1.8.0",
-    "jsr:@noble/secp256k1@2.3.0": "2.3.0",
     "jsr:@noble/secp256k1@^2.3.0": "2.3.0",
     "jsr:@oak/commons@1": "1.0.1",
     "jsr:@scure/base@*": "1.2.6",
@@ -16,7 +15,7 @@
     "jsr:@std/media-types@1": "1.1.0",
     "jsr:@std/path@1": "1.1.1",
     "jsr:@vanice/types@*": "0.1.1",
-    "jsr:@vanice/types@~0.1.2": "0.1.2",
+    "jsr:@vanice/types@~0.1.4": "0.1.4",
     "npm:@noble/hashes@*": "1.8.0",
     "npm:@noble/secp256k1@2.3.0": "2.3.0",
     "npm:@types/node@*": "22.15.15",
@@ -76,8 +75,8 @@
     "@vanice/types@0.1.1": {
       "integrity": "0cfcde258ed722a1d5b14849f9992be5bc34263f79e6203e57ec4e3cfd3a1432"
     },
-    "@vanice/types@0.1.2": {
-      "integrity": "a4c79ead35f7c1eb5b2c5465118abbdfb46ce43dab0edf09801080757478470c",
+    "@vanice/types@0.1.4": {
+      "integrity": "7ea46177b846260d36f2743b39c1fc5f16462e7f99cc60835738d5c8eaf6663e",
       "dependencies": [
         "jsr:@noble/hashes@^1.8.0",
         "jsr:@noble/secp256k1@^2.3.0"
@@ -173,7 +172,8 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@vanice/types@~0.1.2"
+      "jsr:@noble/secp256k1@^2.3.0",
+      "jsr:@vanice/types@~0.1.4"
     ]
   }
 }
