@@ -1,9 +1,8 @@
 import { type Context, type RouterContext, Application, Router } from "https://deno.land/x/oak/mod.ts"
-// TODO: Move to config/env and own file
-import meData from "./me.json" with { type: "json" }
 import { type ExtendedData, extendData, validateData } from "./lib/Data.ts"
 import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { retrieveAll, retrieveByName, insert } from "./lib/db/kv.ts"
+import { getMeData } from "./lib/getMeData.ts"
 
 // Define route paths
 const ROUTES = {
@@ -17,9 +16,6 @@ const ROUTES = {
 // Create Oak application
 const app = new Application()
 const router = new Router()
-
-// Me data
-const meDataIsValid = validateData(meData)
 
 // KVData 
 type KVData = {
@@ -46,7 +42,8 @@ router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NA
 
 // GET /me
 router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
-  if (meDataIsValid) {
+  const meData = getMeData()
+  if (meData !== undefined) {
     ctx.response.body = meData
   } else {
     ctx.response.status = 404
