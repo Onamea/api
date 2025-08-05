@@ -1,6 +1,6 @@
 import isObject from "./utils/isObject.ts"
 import { 
-  type PrimaryChars, 
+  type PrimaryName, 
   type PrimaryKey, 
   type Name, 
   type Fingerprint, 
@@ -28,7 +28,7 @@ export type Data = {
 }
 
 export type ExtendedData = Data & {
-  primaryName: PrimaryChars
+  primaryName: PrimaryName
   fingerprint: Fingerprint
 }
 

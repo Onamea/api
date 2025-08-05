@@ -1,6 +1,6 @@
 import { type Context, type RouterContext, Application, Router } from "https://deno.land/x/oak/mod.ts"
-import { type ExtendedData, extendData, validateData } from "./lib/Data.ts"
-import { type PrimaryKey, isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
+import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
+import { extendData, validateData } from "./lib/Data.ts"
 import { retrieveAll, retrieveByName, insert } from "./lib/db/kv.ts"
 import { getMeData } from "./lib/getMeData.ts"
 
@@ -16,12 +16,6 @@ const ROUTES = {
 // Create Oak application
 const app = new Application()
 const router = new Router()
-
-// KVData 
-type KVData = {
-  key: ["vanice", PrimaryKey],
-  value: ExtendedData
-} 
 
 // GET /
 router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => {

@@ -4,7 +4,7 @@ import type { ExtendedData } from "../Data.ts"
 const kv = await Deno.openKv()
 
 type Key = ["vanice", PrimaryName, PrimaryKey]
-type KVData = {
+export type KVData = {
   key: Key,
   value: ExtendedData
 }
