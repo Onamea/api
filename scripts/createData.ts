@@ -1,6 +1,7 @@
 import { getPublicKey } from "@noble/secp256k1"
 import { primaryKeyToFingerprint, publicKeyToPrimaryKey, sign, verify } from "@vanice/types"
 
+// deno-fmt-ignore
 const privateKey = new Uint8Array([
    30,  38, 118, 159, 239, 195,  62,   6,
   205,   8, 202,  74, 142, 212, 251,  73,

@@ -1,4 +1,4 @@
-import type { Name, Fingerprint } from "@vanice/types"
+import type { Fingerprint, Name } from "@vanice/types"
 import { toPrimaryChars } from "@vanice/types"
 import type { ExtendedData } from "../Data.ts"
 import type { ClientOptions } from "https://deno.land/x/postgres@v0.17.0/mod.ts"

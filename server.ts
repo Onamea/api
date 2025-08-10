@@ -1,7 +1,7 @@
-import { type Context, type RouterContext, Application, Router } from "https://deno.land/x/oak/mod.ts"
+import { Application, type Context, Router, type RouterContext } from "https://deno.land/x/oak/mod.ts"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { extendData, validateData } from "./lib/Data.ts"
-import { retrieveAll, retrieveByName, insert } from "./lib/db/kv.ts"
+import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 import { getMeData } from "./lib/getMeData.ts"
 
 // Define route paths
@@ -9,7 +9,7 @@ const ROUTES = {
   GET_ALL: "/",
   GET_BY_NAME: "/name/:name",
   GET_ME: "/me",
-  POST: "/",
+  POST: "/"
   //DELETE: "/:key"
 } as const
 
@@ -26,7 +26,7 @@ router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => 
 router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME>) => {
   const suppliedName = ctx.params.name
   const [name, fingerprint] = isFingerprintedName(suppliedName) ? splitFingerprintedName(suppliedName) : [suppliedName]
-  if (isName(name) === false) { 
+  if (isName(name) === false) {
     ctx.response.status = 400
     ctx.response.body = { error: "Invalid param: name" }
     return
@@ -69,7 +69,7 @@ router.delete(ROUTES.DELETE, async (ctx: RouterContext<typeof ROUTES.DELETE>) =>
 
   const key = ["vanice", primaryName, primaryKey]
   const entry = await kv.get(key)
-  
+
   if (entry.value) {
     const data = entry.value as KVData
     data.tombstone = true
@@ -97,5 +97,5 @@ app.use(router.allowedMethods())
 
 // Start server
 const port = Deno.env.get("PORT") || "8000"
-console.log(`Starting server on port ${ port }...`)
+console.log(`Starting server on port ${port}...`)
 await app.listen({ port: Number(port) })
