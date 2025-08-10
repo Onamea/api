@@ -1,4 +1,5 @@
-import { type Fingerprint, type Name, type PrimaryKey, type PrimaryName, toPrimaryChars } from "@vanice/types"
+import type { Fingerprint, Name, PrimaryKey, PrimaryName } from "@vanice/types"
+import { toPrimaryChars } from "@vanice/types"
 import type { ExtendedData } from "../Data.ts"
 
 const kv = await Deno.openKv()
