@@ -15,6 +15,8 @@ import isObject from "./utils/isObject.ts"
 export type Data = {
   primaryKey: PrimaryKey
   name: Name
+  primaryName: PrimaryName
+  fingerprint: Fingerprint
   signature: Signature
   /*
   content?: string
