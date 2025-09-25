@@ -19,6 +19,12 @@ const ROUTES = {
 const app = new Application()
 const router = new Router()
 
+// CORS middleware
+app.use(async (ctx: Context, next: () => Promise<unknown>) => {
+  ctx.response.headers.set("Access-Control-Allow-Origin", "*")
+  await next()
+})
+
 // GET /
 router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => {
   ctx.response.body = await retrieveAll()
