@@ -43,8 +43,10 @@ export const insert = async (data: ExtendedData) => {
   const fields = Object.keys(data)
   const values = Object.values(data)
   const valuesString = fields.map((_, i) => `$${i + 1}`).join(", ")
-  const updateFields = fields.map(field => `${field} = EXCLUDED.${field}`).join(", ")
-  const query = `INSERT INTO data (${fields.join(", ")}) VALUES (${valuesString}) ON CONFLICT (primarykey) DO UPDATE SET ${updateFields}`
+  const updateFields = fields.map((field) => `${field} = EXCLUDED.${field}`).join(", ")
+  const query = `INSERT INTO data (${
+    fields.join(", ")
+  }) VALUES (${valuesString}) ON CONFLICT (primarykey) DO UPDATE SET ${updateFields}`
   await client.queryObject({
     text: query,
     args: values
