@@ -24,3 +24,11 @@ console.log({
   fingerprint,
   signature
 })
+
+const data = { primaryKey, name, signature }
+
+console.log(`
+  curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '${ JSON.stringify(data) }' \
+  http://localhost:8000/`)

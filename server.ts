@@ -2,8 +2,8 @@ import type { Context, RouterContext } from "https://deno.land/x/oak/mod.ts"
 import { Application, Router } from "https://deno.land/x/oak/mod.ts"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { extendData, validateData } from "./lib/Data.ts"
-//import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
+//import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
 
 // Define route paths
