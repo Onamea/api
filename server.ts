@@ -1,5 +1,5 @@
-import type { Context, RouterContext } from "https://deno.land/x/oak/mod.ts"
-import { Application, Router } from "https://deno.land/x/oak/mod.ts"
+import type { Context, RouterContext } from "oak"
+import { Application, Router } from "oak"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { extendData, validateData } from "./lib/Data.ts"
 import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"

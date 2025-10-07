@@ -40,8 +40,6 @@ export const insert = async (data: ExtendedData) => {
   await kv.set(key, data)
 }
 
-/*
 export const remove = async (primaryKey: PrimaryKey) => {
-
+  await kv.delete(["vanice", "VAN1C", primaryKey])
 }
-*/
