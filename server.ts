@@ -2,7 +2,7 @@ import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { extendData, validateData } from "./lib/Data.ts"
-import { insert, retrieveAll, retrieveByName, remove } from "./lib/db/kv.ts"
+import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
 
@@ -29,11 +29,6 @@ app.use(async (ctx: Context, next: () => Promise<unknown>) => {
 router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => {
   ctx.response.body = await retrieveAll()
 })
-
-// tmp clear db
-;(async function () {
-  await remove("VAN1C2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N503")
-})()
 
 // GET /name/{vanity_name}
 router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME>) => {
