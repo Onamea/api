@@ -5,6 +5,7 @@
     "jsr:@noble/hashes@^1.8.0": "1.8.0",
     "jsr:@noble/secp256k1@^2.3.0": "2.3.0",
     "jsr:@oak/commons@1": "1.0.1",
+    "jsr:@oak/oak@^17.1.6": "17.1.6",
     "jsr:@scure/base@*": "1.2.6",
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/bytes@1": "1.0.6",
@@ -53,6 +54,18 @@
         "jsr:@std/encoding@1",
         "jsr:@std/http",
         "jsr:@std/media-types"
+      ]
+    },
+    "@oak/oak@17.1.6": {
+      "integrity": "c7eef2eec733fba8e72b679bba3b8cf2fceccf5ef489a8b8fb43571908c0335d",
+      "dependencies": [
+        "jsr:@oak/commons",
+        "jsr:@std/assert",
+        "jsr:@std/bytes@1",
+        "jsr:@std/http",
+        "jsr:@std/media-types",
+        "jsr:@std/path@1",
+        "npm:path-to-regexp"
       ]
     },
     "@scure/base@1.2.6": {
@@ -402,6 +415,7 @@
     "dependencies": [
       "jsr:@db/postgres@~0.19.5",
       "jsr:@noble/secp256k1@^2.3.0",
+      "jsr:@oak/oak@^17.1.6",
       "jsr:@vanice/types@~0.1.4"
     ]
   }

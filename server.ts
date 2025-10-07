@@ -1,5 +1,5 @@
-import type { Context, RouterContext } from "oak"
-import { Application, Router } from "oak"
+import type { Context, RouterContext } from "@oak/oak"
+import { Application, Router } from "@oak/oak"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
 import { extendData, validateData } from "./lib/Data.ts"
 import { insert, retrieveAll, retrieveByName, remove } from "./lib/db/kv.ts"
@@ -31,7 +31,7 @@ router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => 
 })
 
 // tmp clear db
-(async function () {
+;(async function () {
   await remove("VAN1C2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N503")
 })()
 
