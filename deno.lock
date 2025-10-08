@@ -22,7 +22,7 @@
     "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.0.8": "1.1.1",
     "jsr:@vanice/types@*": "0.1.1",
-    "jsr:@vanice/types@~0.1.4": "0.1.4",
+    "jsr:@vanice/types@~0.1.9": "0.1.9",
     "npm:@noble/hashes@*": "1.8.0",
     "npm:@noble/secp256k1@2.3.0": "2.3.0",
     "npm:@types/node@*": "22.15.15",
@@ -107,8 +107,8 @@
     "@vanice/types@0.1.1": {
       "integrity": "0cfcde258ed722a1d5b14849f9992be5bc34263f79e6203e57ec4e3cfd3a1432"
     },
-    "@vanice/types@0.1.4": {
-      "integrity": "7ea46177b846260d36f2743b39c1fc5f16462e7f99cc60835738d5c8eaf6663e",
+    "@vanice/types@0.1.9": {
+      "integrity": "d125f6b4ffbd9db40df1771a703e38cf626e4b16d898669f3683cc68bd3689eb",
       "dependencies": [
         "jsr:@noble/hashes@^1.8.0",
         "jsr:@noble/secp256k1@^2.3.0"
@@ -416,7 +416,7 @@
       "jsr:@db/postgres@~0.19.5",
       "jsr:@noble/secp256k1@^2.3.0",
       "jsr:@oak/oak@^17.1.6",
-      "jsr:@vanice/types@~0.1.4"
+      "jsr:@vanice/types@~0.1.9"
     ]
   }
 }

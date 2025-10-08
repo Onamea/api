@@ -33,7 +33,7 @@ router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => 
 // GET /name/{vanity_name}
 router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME>) => {
   const suppliedName = ctx.params.name
-  const [name, fingerprint] = isFingerprintedName(suppliedName) ? splitFingerprintedName(suppliedName) : [suppliedName]
+  const [name,, fingerprint] = isFingerprintedName(suppliedName) ? splitFingerprintedName(suppliedName) : [suppliedName]
   if (isName(name) === false) {
     ctx.response.status = 400
     ctx.response.body = { error: "Invalid param: name" }

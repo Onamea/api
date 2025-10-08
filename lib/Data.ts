@@ -1,11 +1,12 @@
-import type { Fingerprint, Name, PrimaryKey, PrimaryName, Signature } from "@vanice/types"
+import type { Fingerprint, FingerprintDisplay, Name, PrimaryKey, PrimaryName, Signature } from "@vanice/types"
 import {
+  displayFingerprint,
   isAcceptedName,
   isNameOrFingerprintedName,
   isPrimaryKey,
   isSignature,
   primaryKeyToFingerprint,
-  toPrimaryChars,
+  toPrimaryName,
   verify
 } from "@vanice/types"
 import isObject from "./utils/isObject.ts"
@@ -15,19 +16,20 @@ import isObject from "./utils/isObject.ts"
 export type Data = {
   primaryKey: PrimaryKey
   name: Name
-  primaryName: PrimaryName
-  fingerprint: Fingerprint
   signature: Signature
   /*
   content?: string
   tombstone?: boolean
-  datetime: Epoch
   */
 }
 
 export type ExtendedData = Data & {
   primaryName: PrimaryName
   fingerprint: Fingerprint
+  fingerprintDisplay: FingerprintDisplay
+  /*
+  datetime: Epoch
+  */
 }
 
 export const validateData = (data: unknown): data is Data => {
@@ -49,13 +51,15 @@ export const validateData = (data: unknown): data is Data => {
 
 export const extendData = async (data: Data): Promise<ExtendedData> => {
   const { primaryKey, name, signature } = data
-  const primaryName = toPrimaryChars(name)
+  const primaryName = toPrimaryName(name)
   const fingerprint = await primaryKeyToFingerprint(primaryKey)
+  const fingerprintDisplay = displayFingerprint(fingerprint)
   return {
     primaryKey,
     name,
     primaryName,
     fingerprint,
+    fingerprintDisplay,
     signature
   }
 }
