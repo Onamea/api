@@ -5,19 +5,15 @@ import type { ExtendedData } from "../Data.ts"
 const kv = await Deno.openKv()
 
 type Key = ["vanice", PrimaryName, PrimaryKey]
-export type KVData = {
-  key: Key
-  value: ExtendedData
-}
 
-export const retrieveAll = async (): Promise<KVData[]> => {
+export const retrieveAll = async (): Promise<ExtendedData[]> => {
   const entries = kv.list({ prefix: ["vanice"] })
-  const values: KVData[] = []
+  const values: ExtendedData[] = []
   for await (const entry of entries) {
-    values.push(entry as unknown as KVData)
+    values.push(entry.value as ExtendedData)
   }
   // sort by primary key
-  values.sort((a, b) => a.key[2].localeCompare(b.key[2]))
+  //values.sort((a, b) => a.key[2].localeCompare(b.key[2]))
   return values
 }
 
@@ -40,6 +36,6 @@ export const insert = async (data: ExtendedData) => {
   await kv.set(key, data)
 }
 
-export const remove = async (primaryKey: PrimaryKey) => {
-  await kv.delete(["vanice", "VAN1C", primaryKey])
+export const remove = async (primaryName: PrimaryName, primaryKey: PrimaryKey) => {
+  await kv.delete(["vanice", primaryName, primaryKey])
 }
