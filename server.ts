@@ -104,6 +104,6 @@ app.use(router.routes())
 app.use(router.allowedMethods())
 
 // Start server
-const port = Deno.env.get("PORT") || "8000"
+const port = Deno.env.get("PORT") ?? "8000"
 console.log(`Starting server on port ${port}...`)
 await app.listen({ port: Number(port) })
