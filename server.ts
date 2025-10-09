@@ -6,6 +6,10 @@ import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
 
+import addNetworkDatetime from "./migrations/addNetworkDatetime.ts"
+
+await addNetworkDatetime() // Run migration to add network.datetime if missing
+
 // Define route paths
 const ROUTES = {
   GET_ALL: "/",
