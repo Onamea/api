@@ -7,7 +7,7 @@ export default async () => {
   const entries = kv.list({ prefix: ["vanice"] })
   for await (const entry of entries) {
     const e = entry.value as unknown as ExtendedData
-    if (!("network" in e) || e.network !== undefined) continue
+    if ("network" in e) continue
     kv.set(entry.key, { ...e, network: { datetime } })
   }
 }
