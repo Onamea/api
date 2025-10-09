@@ -1,7 +1,7 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
 import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
-import { extendData, validateData } from "./lib/Data.ts"
+import { extendData, extendWithNetworkData, validateData } from "./lib/Data.ts"
 import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
@@ -55,12 +55,12 @@ router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
 
 // POST /
 router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
-  const data = await ctx.request.body.json()
-  const isValid = validateData(data)
+  const body = await ctx.request.body.json()
+  const isValid = validateData(body)
   if (isValid) {
-    const extendedData = await extendData(data)
-    await insert(extendedData)
-    ctx.response.body = extendedData
+    const data = extendWithNetworkData(await extendData(body))
+    await insert(data)
+    ctx.response.body = data
   } else {
     ctx.response.status = 400
     ctx.response.body = { error: "Invalid data" }

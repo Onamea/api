@@ -11,7 +11,7 @@ import {
 } from "@vanice/types"
 import isObject from "./utils/isObject.ts"
 
-//type Epoch = number
+type Epoch = number
 
 export type Data = {
   primaryKey: PrimaryKey
@@ -27,10 +27,15 @@ export type ExtendedData = Data & {
   primaryName: PrimaryName
   fingerprint: Fingerprint
   fingerprintDisplay: FingerprintDisplay
-  /*
-  datetime: Epoch
-  */
 }
+
+export type NetworkData = {
+  network: {
+    datetime: Epoch
+  }
+}
+
+export type ExtendedNetworkData = ExtendedData & NetworkData
 
 export const validateData = (data: unknown): data is Data => {
   if (isObject(data)) {
@@ -50,16 +55,23 @@ export const validateData = (data: unknown): data is Data => {
 }
 
 export const extendData = async (data: Data): Promise<ExtendedData> => {
-  const { primaryKey, name, signature } = data
+  const { primaryKey, name } = data
   const primaryName = toPrimaryName(name)
   const fingerprint = await primaryKeyToFingerprint(primaryKey)
   const fingerprintDisplay = displayFingerprint(fingerprint)
   return {
-    primaryKey,
-    name,
+    ...data,
     primaryName,
     fingerprint,
-    fingerprintDisplay,
-    signature
+    fingerprintDisplay
+  }
+}
+
+export const extendWithNetworkData = (data: ExtendedData): ExtendedData & NetworkData => {
+  return {
+    ...data,
+    network: {
+      datetime: Date.now()
+    }
   }
 }
