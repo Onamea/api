@@ -5,9 +5,6 @@ import { extendData, extendWithNetworkData, validateData } from "./lib/Data.ts"
 import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
-import appendCryptoIndices from "./migrations/appendCryptoIndices.ts"
-
-await appendCryptoIndices()
 
 // Define route paths
 const ROUTES = {
@@ -59,7 +56,7 @@ router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
 // POST /
 router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const body = await ctx.request.body.json()
-  const isValid = validateData(body)
+  const isValid = await validateData(body)
   if (isValid) {
     const data = extendWithNetworkData(await extendData(body))
     await insert(data)
