@@ -5,6 +5,9 @@ import { extendData, extendWithNetworkData, validateData } from "./lib/Data.ts"
 import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import { getMeData } from "./lib/getMeData.ts"
+import appendCryptoIndices from "./migrations/appendCryptoIndices.ts"
+
+await appendCryptoIndices()
 
 // Define route paths
 const ROUTES = {

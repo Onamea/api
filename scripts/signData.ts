@@ -1,4 +1,13 @@
-import { isName, isPrimaryKey, primaryKeyToPublicKey, sign, fromHex, keyPairFromPrivateKey, displayPublicKey } from "@vanice/types"
+import { 
+  isName, 
+  isPrimaryKey, 
+  primaryKeyToPublicKey, 
+  sign, 
+  fromHex, 
+  keyPairFromPrivateKey, 
+  displayPublicKey, 
+  messageToHash
+} from "@vanice/types"
 
 const name = Deno.args[0]
 const primaryKey = Deno.args[1]
@@ -21,14 +30,16 @@ if (privateKeyHex === undefined) {
 
 const publicKey = primaryKeyToPublicKey(primaryKey)
 const privateKey = fromHex(privateKeyHex)
-const keyPair = keyPairFromPrivateKey(privateKey)
+const cryptoName = "ECDSA"
+const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
 
-if (displayPublicKey(publicKey) !== displayPublicKey(keyPair[0])) {
+if (displayPublicKey(cryptoName, publicKey) !== displayPublicKey(cryptoName, keyPair.publicKey)) {
   console.error("Private key does not match primary key")
   Deno.exit(1)
 }
 
-const signature = await sign(primaryKey, name, privateKey)
+const hash = await messageToHash(primaryKey)
+const signature = await sign(cryptoName, hash, privateKey)
 
 const data = { primaryKey, name, signature }
 

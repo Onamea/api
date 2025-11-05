@@ -2,7 +2,9 @@
   "version": "5",
   "specifiers": {
     "jsr:@db/postgres@~0.19.5": "0.19.5",
+    "jsr:@noble/ed25519@3": "3.0.0",
     "jsr:@noble/hashes@^1.8.0": "1.8.0",
+    "jsr:@noble/secp256k1@3": "3.0.0",
     "jsr:@noble/secp256k1@^2.3.0": "2.3.0",
     "jsr:@oak/commons@1": "1.0.1",
     "jsr:@oak/oak@^17.1.6": "17.1.6",
@@ -22,7 +24,7 @@
     "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.0.8": "1.1.1",
     "jsr:@vanice/types@*": "0.1.1",
-    "jsr:@vanice/types@~0.1.9": "0.1.9",
+    "jsr:@vanice/types@0.2.0-alpha.3": "0.2.0-alpha.3",
     "npm:@noble/hashes@*": "1.8.0",
     "npm:@noble/secp256k1@2.3.0": "2.3.0",
     "npm:@types/node@*": "22.15.15",
@@ -39,11 +41,17 @@
         "jsr:@std/path@^1.0.8"
       ]
     },
+    "@noble/ed25519@3.0.0": {
+      "integrity": "cf3cc8022e0ab17649af2064be922b9653af8a2bbe695bd02f88317746dc619e"
+    },
     "@noble/hashes@1.8.0": {
       "integrity": "b52a2fcb4d02f8d8137871564a31f1ee9e2b0d15eedabbf32d2f7333f0abc939"
     },
     "@noble/secp256k1@2.3.0": {
       "integrity": "63eb4479a7c548e0ddea1cb5ea9bf7efacafe495e7f1c07bce1b4108df95967f"
+    },
+    "@noble/secp256k1@3.0.0": {
+      "integrity": "8d1639a9c06fcffacf720d8319e8e996e9fbfbaf868324e4cec5dc56b2ade1b9"
     },
     "@oak/commons@1.0.1": {
       "integrity": "889ff210f0b4292591721be07244ecb1b5c118742f5273c70cf30d7cd4184d0c",
@@ -107,11 +115,12 @@
     "@vanice/types@0.1.1": {
       "integrity": "0cfcde258ed722a1d5b14849f9992be5bc34263f79e6203e57ec4e3cfd3a1432"
     },
-    "@vanice/types@0.1.9": {
-      "integrity": "d125f6b4ffbd9db40df1771a703e38cf626e4b16d898669f3683cc68bd3689eb",
+    "@vanice/types@0.2.0-alpha.3": {
+      "integrity": "0c80d9a9063148e69bb4b1ae88f7499f75a6ff50d2ff5a24044485e6202e9526",
       "dependencies": [
+        "jsr:@noble/ed25519",
         "jsr:@noble/hashes@^1.8.0",
-        "jsr:@noble/secp256k1@^2.3.0"
+        "jsr:@noble/secp256k1@3"
       ]
     }
   },
@@ -416,7 +425,7 @@
       "jsr:@db/postgres@~0.19.5",
       "jsr:@noble/secp256k1@^2.3.0",
       "jsr:@oak/oak@^17.1.6",
-      "jsr:@vanice/types@~0.1.9"
+      "jsr:@vanice/types@0.2.0-alpha.3"
     ]
   }
 }

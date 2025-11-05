@@ -1,13 +1,16 @@
 import type { Fingerprint, FingerprintDisplay, Name, PrimaryKey, PrimaryName, Signature } from "@vanice/types"
 import {
   displayFingerprint,
+  readCryptoNameFromPrimaryKey,
   isAcceptedName,
   isNameOrFingerprintedName,
   isPrimaryKey,
   isSignature,
   primaryKeyToFingerprint,
   toPrimaryName,
-  verify
+  messageToHash,
+  verify,
+  primaryKeyToPublicKey,
 } from "@vanice/types"
 import isObject from "./utils/isObject.ts"
 
@@ -37,13 +40,16 @@ export type NetworkData = {
 
 export type ExtendedNetworkData = ExtendedData & NetworkData
 
-export const validateData = (data: unknown): data is Data => {
+export const validateData = async (data: unknown): Promise<boolean> => {
   if (isObject(data)) {
     if (isPrimaryKey(data.primaryKey)) {
+      const cryptoName = readCryptoNameFromPrimaryKey(data.primaryKey)
       if (isNameOrFingerprintedName(data.name)) {
         if (isAcceptedName(data.name)) {
-          if (isSignature(data.signature)) {
-            if (verify(data.primaryKey, data.name, data.signature)) {
+          if (isSignature(cryptoName, data.signature)) {
+            const hash = await messageToHash(data.name)
+            const publicKey = primaryKeyToPublicKey(data.primaryKey)
+            if (await verify(cryptoName, hash, data.signature, publicKey)) {
               return true
             }
           }

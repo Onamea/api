@@ -1,5 +1,5 @@
 import type { Fingerprint, Name } from "@vanice/types"
-import { toPrimaryChars } from "@vanice/types"
+import { toPrimaryName } from "@vanice/types"
 import type { ExtendedData } from "../Data.ts"
 import { type ClientOptions, Client } from "@db/postgres"
 
@@ -24,7 +24,7 @@ export const retrieveAll = async (): Promise<ExtendedData[]> => {
 }
 
 export const retrieveByName = async (name: Name, fingerprint: Fingerprint | undefined): Promise<ExtendedData[]> => {
-  const primaryName = toPrimaryChars(name)
+  const primaryName = toPrimaryName(name)
   let query = "SELECT * FROM data WHERE primaryname = $1"
   const params = [primaryName]
   if (fingerprint !== undefined) {
