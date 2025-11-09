@@ -3,8 +3,11 @@ import { Application, Router } from "@oak/oak"
 import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, parseNameKey, splitFingerprintedName} from "@vanice/types"
 import { isIncomingOperation, cleanIncomingOperation, validateOperation, isAcceptedOperation } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
-//import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
 import getMe from "./lib/getMe.ts"
+
+// migration
+import clear from "./migrations/clear.ts"
+await clear()
 
 // Define route paths
 const ROUTES = {
