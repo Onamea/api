@@ -1,10 +1,10 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { isFingerprintedName, isName, splitFingerprintedName } from "@vanice/types"
-import { extendData, extendWithNetworkData, validateData } from "./lib/Data.ts"
-import { insert, retrieveAll, retrieveByName } from "./lib/db/kv.ts"
+import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, parseNameKey, splitFingerprintedName} from "@vanice/types"
+import { isIncomingOperation, cleanIncomingOperation, validateOperation, isAcceptedOperation } from "./lib/Operation.ts"
+import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 //import { insert, retrieveAll, retrieveByName } from "./lib/db/postgres.ts"
-import { getMeData } from "./lib/getMeData.ts"
+import getMe from "./lib/getMe.ts"
 
 // Define route paths
 const ROUTES = {
@@ -44,9 +44,9 @@ router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NA
 
 // GET /me
 router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
-  const meData = getMeData()
-  if (meData !== undefined) {
-    ctx.response.body = meData
+  const me = getMe()
+  if (me !== undefined) {
+    ctx.response.body = me
   } else {
     ctx.response.status = 404
     ctx.response.body = { error: "No Me data configured" }
@@ -56,14 +56,28 @@ router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
 // POST /
 router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const body = await ctx.request.body.json()
-  const isValid = await validateData(body)
-  if (isValid) {
-    const data = extendWithNetworkData(await extendData(body))
-    await insert(data)
-    ctx.response.body = data
-  } else {
-    ctx.response.status = 400
-    ctx.response.body = { error: "Invalid data" }
+  if (isIncomingOperation(body)) {
+    const incomingOperation = cleanIncomingOperation(body)
+    try {
+      const signedOperation = await validateOperation(incomingOperation)
+      const { id } = signedOperation
+      const currentIdentity = await retrieveByNameKey(id)
+      if (currentIdentity === undefined && isCreateOperation(signedOperation) === false) {
+        throw new Error(`Identity: ${ id } does not exist on this server. First message must be of type CREATE.`)
+      }
+      if (isAcceptedOperation(currentIdentity, signedOperation) === false) {
+        // return existing Identity
+        throw new Error("Operation already exists")
+      }
+      const operations = currentIdentity ? [...currentIdentity.operations, signedOperation] : [signedOperation]
+      const [primaryKey, name] = parseNameKey(id)
+      const nextIdentity = await buildFromOperations(operations, primaryKey, name)
+      await insert(nextIdentity)
+      ctx.response.body = nextIdentity
+    } catch (error) {
+      ctx.response.status = 400
+      ctx.response.body = { error: (error as Error).message }
+    }
   }
 })
 
