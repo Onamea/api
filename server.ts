@@ -5,10 +5,6 @@ import { isIncomingOperation, cleanIncomingOperation, validateOperation, isAccep
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
 
-// migration
-import clear from "./migrations/clear.ts"
-await clear()
-
 // Define route paths
 const ROUTES = {
   GET_ALL: "/",
