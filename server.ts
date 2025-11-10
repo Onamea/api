@@ -1,6 +1,6 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, parseNameKey, splitFingerprintedName} from "@vanice/types"
+import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, parseNameKey, splitFingerprintedName} from "@vanice/types"
 import { isIncomingOperation, cleanIncomingOperation, validateOperation, isAcceptedOperation } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
@@ -9,6 +9,7 @@ import getMe from "./lib/getMe.ts"
 const ROUTES = {
   GET_ALL: "/",
   GET_BY_NAME: "/name/:name",
+  GET_BY_NAME_KEY: "/namekey/:nameKey",
   GET_ME: "/me",
   POST: "/"
   //DELETE: "/:key"
@@ -29,7 +30,7 @@ router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => 
   ctx.response.body = await retrieveAll()
 })
 
-// GET /name/{vanity_name}
+// GET /name/{name}
 router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME>) => {
   const suppliedName = ctx.params.name
   const [name,, fingerprint] = isFingerprintedName(suppliedName) ? splitFingerprintedName(suppliedName) : [suppliedName]
@@ -39,6 +40,17 @@ router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NA
     return
   }
   ctx.response.body = await retrieveByName(name, fingerprint)
+})
+
+// GET /namekey/{nameKey}
+router.get(ROUTES.GET_BY_NAME_KEY, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME_KEY>) => {
+  const nameKey = ctx.params.nameKey
+  if (isNameKey(nameKey) === false) {
+    ctx.response.status = 400
+    ctx.response.body = { error: `Invalid param nameKey: ${ nameKey }` }
+    return
+  }
+  ctx.response.body = await retrieveByNameKey(nameKey)
 })
 
 // GET /me
