@@ -1,5 +1,5 @@
-import type { SignedOperation, Signature, Identity } from "@vanice/types"
-import { verifyOperation, messageToHash, parseOperation, isHexString, createCreateOperation, toRawOperation } from "@vanice/types"
+import type { SignedOperation, Signature, Identity, NameKey } from "@vanice/types"
+import { verifyOperation, messageToHash, parseOperation, isHexString, createCreateOperation, parseNameKey, buildFromOperations } from "@vanice/types"
 import isString from "./utils/isString.ts"
 import isObject from "./utils/isObject.ts"
 
@@ -42,8 +42,8 @@ export const isAcceptedOperation = (identity: Identity | undefined, operation: S
   return identity.operations.some(({ hash }) => hash === operation.hash) === false
 }
 
-export const buildFromNameKey = async (nameKey: NameKey): Identity => {
-  const [name, primaryKey] = nameKey
+export const buildFromNameKey = async (nameKey: NameKey): Promise<Identity> => {
+  const [primaryKey, name] = parseNameKey(nameKey)
   const createOperation = await createCreateOperation(name, primaryKey)
-
+  return await buildFromOperations([createOperation], primaryKey, name)
 }
