@@ -1,9 +1,10 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, parseNameKey, splitFingerprintedName} from "@vanice/types"
-import { isIncomingOperation, cleanIncomingOperation, validateOperation, isAcceptedOperation } from "./lib/Operation.ts"
+import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, parseNameKey, splitFingerprintedName} from "@vanice/types"
+import { areIncomingOperations, cleanIncomingOperation, validateOperations, isAcceptedOperation, groupOperationsById } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
+import toArray from "./lib/utils/toArray.ts"
 
 // Define route paths
 const ROUTES = {
@@ -73,28 +74,39 @@ router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
 // POST /
 router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const body = await ctx.request.body.json()
-  if (isIncomingOperation(body)) {
-    const incomingOperation = cleanIncomingOperation(body)
+  const arr = toArray(body)
+  if (areIncomingOperations(arr)) {
+    const incomingOperations = arr.map(cleanIncomingOperation)
     try {
-      const signedOperation = await validateOperation(incomingOperation)
-      const { id } = signedOperation
-      const currentIdentity = await retrieveByNameKey(id)
-      if (currentIdentity === undefined && isCreateOperation(signedOperation) === false) {
-        throw new Error(`Identity: ${ id } does not exist on this server. First message must be of type CREATE.`)
+      const signedOperations = await validateOperations(incomingOperations)
+      const groupedOperations = groupOperationsById(signedOperations)
+      const response = []
+      for (const id in groupedOperations) {
+        const nameKey = id as NameKey
+        const operations = groupedOperations[nameKey]
+        const currentIdentity = await retrieveByNameKey(nameKey)
+        if (currentIdentity === undefined && isCreateOperation(operations[0]) === false) {
+          throw new Error(`Identity: ${ id } does not exist on this server. First message must be of type CREATE.`)
+        }
+        const newOperations = currentIdentity ? operations.filter(operation => isAcceptedOperation(currentIdentity, operation)) : operations
+        if (newOperations.length === 0) {
+          response.push(currentIdentity)
+        } else {
+          const [primaryKey, name] = parseNameKey(id)
+          const nextOperations = currentIdentity ? [...currentIdentity.operations, ...newOperations] : newOperations
+          const nextIdentity = await buildFromOperations(nextOperations, primaryKey, name)
+          await insert(nextIdentity)
+          response.push(nextIdentity)
+        }
       }
-      if (isAcceptedOperation(currentIdentity, signedOperation) === false) {
-        // return existing Identity
-        throw new Error("Operation already exists")
-      }
-      const operations = currentIdentity ? [...currentIdentity.operations, signedOperation] : [signedOperation]
-      const [primaryKey, name] = parseNameKey(id)
-      const nextIdentity = await buildFromOperations(operations, primaryKey, name)
-      await insert(nextIdentity)
-      ctx.response.body = nextIdentity
+      ctx.response.body = response
     } catch (error) {
       ctx.response.status = 400
       ctx.response.body = { error: (error as Error).message }
     }
+  } else {
+    ctx.response.status = 400
+    ctx.response.body = { error: "Invalid request body" }
   }
 })
 

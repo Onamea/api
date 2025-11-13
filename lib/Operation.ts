@@ -1,4 +1,4 @@
-import type { SignedOperation, Signature, Identity, NameKey } from "@vanice/types"
+import type { SignedOperation, Signature, Identity, NameKey, Operation, Operations } from "@vanice/types"
 import { verifyOperation, messageToHash, parseOperation, isHexString, createCreateOperation, parseNameKey, buildFromOperations } from "@vanice/types"
 import isString from "./utils/isString.ts"
 import isObject from "./utils/isObject.ts"
@@ -8,15 +8,31 @@ type IncomingOperation = {
   signature: Signature
 }
 
+
 export const isIncomingOperation = (obj: unknown): obj is IncomingOperation => {
   if (isObject(obj) === false) return false
   const { raw, signature } = obj as IncomingOperation
   return isString(raw) && isHexString(signature)
 }
 
+export const areIncomingOperations = (arr: unknown[]): arr is IncomingOperation[] => {
+  return arr.every(isIncomingOperation)
+}
+
 export const cleanIncomingOperation = (obj: IncomingOperation): IncomingOperation => {
   const { raw, signature } = obj
   return { raw, signature }
+}
+
+export const groupOperationsById = (operations: Operations): Record<NameKey, Operations> => {
+  return operations.reduce((acc, operation) => {
+    const { id } = operation
+    if (acc[id] === undefined) {
+      acc[id] = []
+    }
+    acc[id].push(operation)
+    return acc
+  }, {} as Record<NameKey, Operations>)
 }
 
 // parse
@@ -27,7 +43,6 @@ export const validateOperation = async (incomingOperation: IncomingOperation): P
   const hash = await messageToHash(raw)
   const operation = await parseOperation(raw)
   const signedOperation = { ...operation, hash, signature }
-  console.log(operation, signedOperation)
   const isVerified = await verifyOperation(signedOperation)
   if (isVerified === false) {
     throw new Error("Operation verification failed")
@@ -35,7 +50,16 @@ export const validateOperation = async (incomingOperation: IncomingOperation): P
   return signedOperation
 }
 
-export const isAcceptedOperation = (identity: Identity | undefined, operation: SignedOperation): boolean => {
+export const validateOperations = async (incomingOperations: IncomingOperation[]): Promise<SignedOperation[]> => {
+  const validatedOperations: SignedOperation[] = []
+  for (const incomingOperation of incomingOperations) {
+    const signedOperation = await validateOperation(incomingOperation)
+    validatedOperations.push(signedOperation)
+  }
+  return validatedOperations
+}
+
+export const isAcceptedOperation = (identity: Identity | undefined, operation: Operation): boolean => {
   if (identity === undefined) {
     return operation.type === "CREATE"
   }
