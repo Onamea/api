@@ -5,7 +5,6 @@ import { areIncomingOperations, cleanIncomingOperation, validateOperations, isAc
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
 import toArray from "./lib/utils/toArray.ts"
-import addNameKey from "./migrations/addNameKey.ts"
 
 // Define route paths
 const ROUTES = {
@@ -20,9 +19,6 @@ const ROUTES = {
 // Create Oak application
 const app = new Application()
 const router = new Router()
-
-// Run migrations
-await addNameKey()
 
 // CORS middleware
 app.use(async (ctx: Context, next: () => Promise<unknown>) => {
