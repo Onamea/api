@@ -8,10 +8,9 @@ type IncomingOperation = {
   signature: Signature
 }
 
-
 export const isIncomingOperation = (obj: unknown): obj is IncomingOperation => {
   if (isObject(obj) === false) return false
-  const { raw, signature } = obj as IncomingOperation
+  const { raw, signature } = obj
   return isString(raw) && isHexString(signature)
 }
 
