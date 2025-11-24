@@ -1,11 +1,11 @@
-import type { SignedOperation, Signature, Identity, NameKey, Operation, Operations } from "@vanice/types"
+import type { SignedOperation, Identity, NameKey, Operation, Operations, SignatureDisplay } from "@vanice/types"
 import { verifyOperation, messageToHash, parseOperation, isHexString, createCreateOperation, parseNameKey, buildFromOperations } from "@vanice/types"
 import isString from "./utils/isString.ts"
 import isObject from "./utils/isObject.ts"
 
 type IncomingOperation = {
   raw: string
-  signature: Signature
+  signature: SignatureDisplay
 }
 
 export const isIncomingOperation = (obj: unknown): obj is IncomingOperation => {
