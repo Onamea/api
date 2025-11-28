@@ -1,7 +1,7 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, parseNameKey, splitFingerprintedName} from "@vanice/types"
-import { areIncomingOperations, cleanIncomingOperation, validateOperations, isAcceptedOperation, groupOperationsById } from "./lib/Operation.ts"
+import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, splitFingerprintedName } from "@vanice/types"
+import { isAcceptedOperation, areIncomingMessages, validateMessages, groupMessagesById, cleanIncomingMessages } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
 import toArray from "./lib/utils/toArray.ts"
@@ -75,28 +75,32 @@ router.get(ROUTES.GET_ME, (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
 router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const body = await ctx.request.body.json()
   const arr = toArray(body)
-  if (areIncomingOperations(arr)) {
-    const incomingOperations = arr.map(cleanIncomingOperation)
+  if (areIncomingMessages(arr)) {
+    const incomingMessages = cleanIncomingMessages(arr)
     try {
-      const signedOperations = await validateOperations(incomingOperations)
-      const groupedOperations = groupOperationsById(signedOperations)
+      const validatedMessages = await validateMessages(incomingMessages)
+      const groupedMessages = groupMessagesById(validatedMessages)
       const response = []
-      for (const id in groupedOperations) {
+      for (const id in groupedMessages) {
         const nameKey = id as NameKey
-        const operations = groupedOperations[nameKey]
-        const currentIdentity = await retrieveByNameKey(nameKey)
-        if (currentIdentity === undefined && isCreateOperation(operations[0]) === false) {
-          throw new Error(`Identity: ${ id } does not exist on this server. First message must be of type CREATE.`)
+        const currentEntry = await retrieveByNameKey(nameKey)
+        const messages = groupedMessages[nameKey]
+        const operations = messages.map(({ operation }) => operation)
+        if (currentEntry === undefined && operations.some(isCreateOperation) === false) {
+          throw new Error(`Identity: ${ id } does not exist on this server. And no operation of type CREATE supplied.`)
         }
-        const newOperations = currentIdentity ? operations.filter(operation => isAcceptedOperation(currentIdentity, operation)) : operations
+        // TODO: Save different messages of the same operation
+        const newOperations = currentEntry ? 
+          operations.filter(operation => isAcceptedOperation(currentEntry, operation)) : 
+          operations
         if (newOperations.length === 0) {
-          response.push(currentIdentity)
+          response.push(currentEntry)
         } else {
-          const [primaryKey, name] = parseNameKey(id)
-          const nextOperations = currentIdentity ? [...currentIdentity.operations, ...newOperations] : newOperations
-          const nextIdentity = await buildFromOperations(nextOperations, primaryKey, name)
-          await insert(nextIdentity)
-          response.push(nextIdentity)
+          const nextOperations = currentEntry ? [...currentEntry.operations, ...newOperations] : newOperations
+          const nextIdentity = await buildFromOperations(nextOperations, nameKey)
+          const entry = { ...nextIdentity, messages }
+          await insert(entry)
+          response.push(entry)
         }
       }
       ctx.response.body = response

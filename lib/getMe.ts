@@ -1,11 +1,17 @@
-import { type Identity, buildFromOperations, isOperations } from "@vanice/types"
-import isObject from "./utils/isObject.ts"
-import me from "../config/me.json" with { type: "json" }
+import { type Identity, buildFromOperations, isMessage, parseRawOperation } from "@vanice/types"
+import message from "../config/me.json" with { type: "json" }
 
-const operations = isObject(me) && "operations" in me ? me.operations : undefined
-const identity = isOperations(operations) ? 
-  await buildFromOperations(operations, me.operations[0].primaryKey, me.operations[0].name) :
-  undefined
+let identity: Identity | undefined
+
+if (isMessage(message)) {
+  try {
+    const operations = [await parseRawOperation(message.raw)]
+    const nameKey = operations[0].id
+    identity = await buildFromOperations(operations, nameKey) 
+  } catch (error) {
+    console.error("Failed to build identity from config/me.json: ", error)
+  }
+}
 
 export default (): Identity | undefined => {
   return identity

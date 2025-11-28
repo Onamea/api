@@ -1,4 +1,6 @@
 import { assert, assertEquals } from "@std/assert"
+import { createCreateOperation, keyPairFromPrivateKey, signMessage, toRawOperation } from "@vanice/types"
+import { cryptoName, privateKey } from "./data.mock.ts"
 
 const BASE_URL = "http://localhost:8000"
 
@@ -71,7 +73,7 @@ async function clearDenoKV() {
   for await (const entry of kv.list({ prefix: ["vanice"] })) {
     await kv.delete(entry.key)
   }
-  await kv.close()
+  kv.close()
 }
 
 Deno.test("POST / single operation", async () => {
@@ -79,15 +81,14 @@ Deno.test("POST / single operation", async () => {
   await startServer()
   await clearDenoKV()
 
-  const payload = {
-    raw: "Vanic|2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031",
-    signature: "154ff5ca0949a2e6f733533c27f239afcb50053d2953fabb692d50cad37bdefc0e0126b835308d1b526a528cbaed0a7ee4915077079f9364cc364696bb45f2c4"
-  }
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const operation = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  const message = await signMessage({ raw: toRawOperation(operation) }, keyPair)
  
   const response = await fetch(`${ BASE_URL }/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(message)
   })
   assertEquals(response.status, 200)
   const body = await response.json()
@@ -106,23 +107,22 @@ Deno.test("POST / two operations", async () => {
   await startServer()
   await clearDenoKV()
 
-  const payload = [{
-    raw: "Vanic|2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031",
-    signature: "154ff5ca0949a2e6f733533c27f239afcb50053d2953fabb692d50cad37bdefc0e0126b835308d1b526a528cbaed0a7ee4915077079f9364cc364696bb45f2c4"
-  }, {
-    raw: `Vanic|2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031
-5f0d96078bc3443121da5d241d4d9ada7698c7c21c28ad60202291973de97040
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const createOperation = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  const messages = [
+    await signMessage({ raw: toRawOperation(createOperation) }, keyPair),
+    await signMessage({ raw: `Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031
+${ createOperation.hash }
 1
 body
 line2
-`,
-    signature: "6ee0d8682e734cb97119045affde15147ec0dab1df26a1de55f50701024502150245dc7b851b97676cf533d48523c734f6e93d0ae65c50f7c3985a94889d3fb4"
-  }]
- 
+`, }, keyPair)
+  ]
+
   const response = await fetch(`${ BASE_URL }/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(messages)
   })
   assertEquals(response.status, 200)
   const body = await response.json()
@@ -142,18 +142,18 @@ Deno.test("POST / two CREATE operations", async () => {
   await startServer()
   await clearDenoKV()
 
-  const payload = [{
-    raw: "Vanic|2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031",
-    signature: "154ff5ca0949a2e6f733533c27f239afcb50053d2953fabb692d50cad37bdefc0e0126b835308d1b526a528cbaed0a7ee4915077079f9364cc364696bb45f2c4"
-  }, {
-    raw: "Test|PMTXGP6U13PDBFB9R5JP0C46NJFGJMY78BY16ANMVVEND5600",
-    signature: "d847eaa1937b8953f81685046a85af1d55ca47043bd0bd53adba8583ffc03ef8efc7ad7887d6b852eea7b434f53006c5bb36b034dd9af4b10333638e034fdc07"
-  }]
- 
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const createOperation1 = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  const createOperation2 = await createCreateOperation("Test@PMTXGP6U13PDBFB9R5JP0C46NJFGJMY78BY16ANMVVEND5600")
+  const messages = [
+    await signMessage({ raw: toRawOperation(createOperation1) }, keyPair),
+    await signMessage({ raw: toRawOperation(createOperation2) }, keyPair)
+  ]
+
   const response = await fetch(`${ BASE_URL }/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(messages)
   })
   assertEquals(response.status, 200)
   const body = await response.json()
@@ -164,4 +164,3 @@ Deno.test("POST / two CREATE operations", async () => {
 
   await stopServer()
 })
-

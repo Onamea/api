@@ -1,61 +1,54 @@
-import type { SignedOperation, Identity, NameKey, Operation, Operations, SignatureDisplay } from "@vanice/types"
-import { verifyOperation, messageToHash, parseOperation, isHexString, createCreateOperation, parseNameKey, buildFromOperations } from "@vanice/types"
-import isString from "./utils/isString.ts"
-import isObject from "./utils/isObject.ts"
+import type { Message, Identity, NameKey, Operation } from "@vanice/types"
+import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildFromOperations } from "@vanice/types"
 
-type IncomingOperation = {
-  raw: string
-  signature: SignatureDisplay
+type ValidatedMessage = Message & {
+  operation: Operation
+}
+type ValidatedMessages = ValidatedMessage[]
+
+export const areIncomingMessages = (arr: unknown[]): arr is Message[] => {
+  return arr.every(isMessage)
 }
 
-export const isIncomingOperation = (obj: unknown): obj is IncomingOperation => {
-  if (isObject(obj) === false) return false
-  const { raw, signature } = obj
-  return isString(raw) && isHexString(signature)
+export const cleanIncomingMessage = (obj: Message): Message => {
+  const { raw, cryptoName, publicKey, signature, datetime } = obj
+  return { raw, cryptoName, publicKey, signature, datetime }
 }
 
-export const areIncomingOperations = (arr: unknown[]): arr is IncomingOperation[] => {
-  return arr.every(isIncomingOperation)
+export const cleanIncomingMessages = (arr: Message[]): Message[] => {
+  return arr.map(cleanIncomingMessage)
 }
 
-export const cleanIncomingOperation = (obj: IncomingOperation): IncomingOperation => {
-  const { raw, signature } = obj
-  return { raw, signature }
-}
-
-export const groupOperationsById = (operations: Operations): Record<NameKey, Operations> => {
-  return operations.reduce((acc, operation) => {
-    const { id } = operation
+export const groupMessagesById = (messages: ValidatedMessages): Record<NameKey, ValidatedMessages> => {
+  return messages.reduce((acc, message) => {
+    const { id } = message.operation
     if (acc[id] === undefined) {
       acc[id] = []
     }
-    acc[id].push(operation)
+    acc[id].push(message)
     return acc
-  }, {} as Record<NameKey, Operations>)
+  }, {} as Record<NameKey, ValidatedMessages>)
 }
 
 // parse
 // validate
 // verify
-export const validateOperation = async (incomingOperation: IncomingOperation): Promise<SignedOperation> => {
-  const { raw, signature } = incomingOperation
-  const hash = await messageToHash(raw)
-  const operation = await parseOperation(raw)
-  const signedOperation = { ...operation, hash, signature }
-  const isVerified = await verifyOperation(signedOperation)
+export const validateMessage = async (incomingMessage: Message): Promise<ValidatedMessage> => {
+  const { raw } = incomingMessage
+  const operation = await parseRawOperation(raw)
+  const isVerified = await verifyMessage(incomingMessage)
   if (isVerified === false) {
     throw new Error("Operation verification failed")
   }
-  return signedOperation
+  return { ...incomingMessage, operation }
 }
 
-export const validateOperations = async (incomingOperations: IncomingOperation[]): Promise<SignedOperation[]> => {
-  const validatedOperations: SignedOperation[] = []
-  for (const incomingOperation of incomingOperations) {
-    const signedOperation = await validateOperation(incomingOperation)
-    validatedOperations.push(signedOperation)
+export const validateMessages = async (incomingMessages: Message[]): Promise<ValidatedMessage[]> => {
+  const validatedMessages: ValidatedMessage[] = []
+  for (const incomingMessage of incomingMessages) {
+    validatedMessages.push(await validateMessage(incomingMessage))
   }
-  return validatedOperations
+  return validatedMessages
 }
 
 export const isAcceptedOperation = (identity: Identity | undefined, operation: Operation): boolean => {
@@ -66,7 +59,6 @@ export const isAcceptedOperation = (identity: Identity | undefined, operation: O
 }
 
 export const buildFromNameKey = async (nameKey: NameKey): Promise<Identity> => {
-  const [primaryKey, name] = parseNameKey(nameKey)
-  const createOperation = await createCreateOperation(name, primaryKey)
-  return await buildFromOperations([createOperation], primaryKey, name)
+  const createOperation = await createCreateOperation(nameKey)
+  return await buildFromOperations([createOperation], nameKey)
 }
