@@ -5,6 +5,9 @@ import { isAcceptedOperation, areIncomingMessages, validateMessages, groupMessag
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
 import toArray from "./lib/utils/toArray.ts"
+import migration from "./migrations/id.ts"
+
+await migration()
 
 // Define route paths
 const ROUTES = {
