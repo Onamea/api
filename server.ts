@@ -1,6 +1,6 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { buildFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, splitFingerprintedName } from "@vanice/types"
+import { buildIdentityFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, splitFingerprintedName } from "@vanice/types"
 import { isAcceptedOperation, areIncomingMessages, validateMessages, groupMessagesById, cleanIncomingMessages } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
@@ -97,7 +97,7 @@ router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
           response.push(currentEntry)
         } else {
           const nextOperations = currentEntry ? [...currentEntry.operations, ...newOperations] : newOperations
-          const nextIdentity = await buildFromOperations(nextOperations, nameKey)
+          const nextIdentity = await buildIdentityFromOperations(nextOperations, nameKey)
           const entry = { ...nextIdentity, messages }
           await insert(entry)
           response.push(entry)

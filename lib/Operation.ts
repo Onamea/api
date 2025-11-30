@@ -1,5 +1,5 @@
-import type { Message, Identity, NameKey, Operation } from "@vanice/types"
-import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildFromOperations } from "@vanice/types"
+import type { Message, Identity, NameKey, Operation, Id } from "@vanice/types"
+import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildIdentityFromOperations } from "@vanice/types"
 
 type ValidatedMessage = Message & {
   operation: Operation
@@ -19,7 +19,8 @@ export const cleanIncomingMessages = (arr: Message[]): Message[] => {
   return arr.map(cleanIncomingMessage)
 }
 
-export const groupMessagesById = (messages: ValidatedMessages): Record<NameKey, ValidatedMessages> => {
+type ValidatedMessagesRecord = Record<Id, ValidatedMessages>
+export const groupMessagesById = (messages: ValidatedMessages): ValidatedMessagesRecord => {
   return messages.reduce((acc, message) => {
     const { id } = message.operation
     if (acc[id] === undefined) {
@@ -27,7 +28,7 @@ export const groupMessagesById = (messages: ValidatedMessages): Record<NameKey, 
     }
     acc[id].push(message)
     return acc
-  }, {} as Record<NameKey, ValidatedMessages>)
+  }, {} as ValidatedMessagesRecord)
 }
 
 // parse
@@ -60,5 +61,5 @@ export const isAcceptedOperation = (identity: Identity | undefined, operation: O
 
 export const buildFromNameKey = async (nameKey: NameKey): Promise<Identity> => {
   const createOperation = await createCreateOperation(nameKey)
-  return await buildFromOperations([createOperation], nameKey)
+  return await buildIdentityFromOperations([createOperation], nameKey)
 }
