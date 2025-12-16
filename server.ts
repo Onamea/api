@@ -57,7 +57,13 @@ router.get(ROUTES.GET_BY_NAME_KEY, async (ctx: RouterContext<typeof ROUTES.GET_B
     ctx.response.body = { error: `Invalid param nameKey: ${ nameKey }` }
     return
   }
-  ctx.response.body = await retrieveByNameKey(nameKey)
+  const identity = await retrieveByNameKey(nameKey)
+  if (identity === undefined) {
+    ctx.response.status = 404
+    ctx.response.body = { error: `Identity with nameKey: ${ nameKey } not found` }
+    return
+  }
+  ctx.response.body = identity
 })
 
 // GET /me
