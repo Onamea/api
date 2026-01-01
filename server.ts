@@ -1,6 +1,6 @@
 import type { Context, RouterContext } from "@oak/oak"
 import { Application, Router } from "@oak/oak"
-import { buildIdentityFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, splitFingerprintedName } from "@vanice/types"
+import { buildIdentityFromOperations, isCreateOperation, isFingerprintedName, isName, isNameKey, NameKey, parseFingerprintedName } from "@vanice/types"
 import { isAcceptedOperation, areIncomingMessages, validateMessages, groupMessagesById, cleanIncomingMessages } from "./lib/Operation.ts"
 import { insert, retrieveAll, retrieveByName, retrieveByNameKey } from "./lib/db/kv.ts"
 import getMe from "./lib/getMe.ts"
@@ -44,13 +44,13 @@ router.get(ROUTES.GET_ALL, async (ctx: RouterContext<typeof ROUTES.GET_ALL>) => 
 // GET /name/{name}
 router.get(ROUTES.GET_BY_NAME, async (ctx: RouterContext<typeof ROUTES.GET_BY_NAME>) => {
   const suppliedName = ctx.params.name
-  const [name,, fingerprint] = isFingerprintedName(suppliedName) ? splitFingerprintedName(suppliedName) : [suppliedName]
+  const [name, fingerprintDisplay] = isFingerprintedName(suppliedName) ? parseFingerprintedName(suppliedName) : [suppliedName]
   if (isName(name) === false) {
     ctx.response.status = 400
     ctx.response.body = { error: "Invalid param: name" }
     return
   }
-  ctx.response.body = await retrieveByName(name, fingerprint)
+  ctx.response.body = await retrieveByName(name, fingerprintDisplay)
 })
 
 // GET /namekey/{nameKey}
@@ -107,7 +107,7 @@ router.post(ROUTES.POST, async (ctx: RouterContext<typeof ROUTES.POST>) => {
           response.push(currentEntry)
         } else {
           const nextOperations = currentEntry ? [...currentEntry.operations, ...newOperations] : newOperations
-          const nextIdentity = await buildIdentityFromOperations(nextOperations, nameKey)
+          const nextIdentity = await buildIdentityFromOperations(nextOperations, nameKey, true)
           const entry = { ...nextIdentity, messages }
           await insert(entry)
           response.push(entry)

@@ -1,5 +1,5 @@
-import type { Fingerprint, Name, NameKey, PrimaryKey, PrimaryName, Identity, Messages } from "@vanice/types"
-import { fingerprintStartsWithFingerprint, parseNameKey, toPrimaryName } from "@vanice/types"
+import type { FingerprintDisplay, Name, NameKey, PrimaryKey, PrimaryName, Identity, Messages } from "@vanice/types"
+import { fingerprintStartsWithFingerprint, fromFingerprintDisplay, parseNameKey, toPrimaryName } from "@vanice/types"
 
 const kv = await Deno.openKv()
 
@@ -18,13 +18,13 @@ export const retrieveAll = async (): Promise<Entries> => {
   return values
 }
 
-export const retrieveByName = async (name: Name, fingerprint: Fingerprint | undefined): Promise<Entries> => {
+export const retrieveByName = async (name: Name, fingerprintDisplay?: FingerprintDisplay): Promise<Entries> => {
   const primaryName = toPrimaryName(name)
   const entries = kv.list({ prefix: ["vanice", primaryName] })
   const values: Entries = []
   for await (const entry of entries) {
     const data = entry.value as Entry
-    if (fingerprint === undefined || fingerprintStartsWithFingerprint(data.fingerprint, fingerprint)) {
+    if (fingerprintDisplay === undefined || fingerprintStartsWithFingerprint(fromFingerprintDisplay(data.fingerprintDisplay), fromFingerprintDisplay(fingerprintDisplay))) {
       values.push(data)
     }
   }
