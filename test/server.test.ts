@@ -70,7 +70,7 @@ async function stopServer() {
 
 async function clearDenoKV() {
   const kv = await Deno.openKv()
-  for await (const entry of kv.list({ prefix: ["vanice"] })) {
+  for await (const entry of kv.list({ prefix: ["identities"] })) {
     await kv.delete(entry.key)
   }
   kv.close()
@@ -82,7 +82,7 @@ Deno.test("POST / single operation", async () => {
   await clearDenoKV()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
-  const operation = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  const operation = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
   const message = await signMessage({ raw: toRawOperation(operation) }, keyPair)
  
   const response = await fetch(`${ BASE_URL }/`, {
@@ -94,8 +94,8 @@ Deno.test("POST / single operation", async () => {
   const body = await response.json()
   assert(Array.isArray(body))
   assertEquals(body.length, 1)
-  assertEquals(body[0].name, "Vanic")
-  assertEquals(body[0].primaryKey, "VAN1C2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  assertEquals(body[0].name, "Vani")
+  assertEquals(body[0].primaryKey, "VAN146G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
   assertEquals(body[0].operations[0].type, "CREATE")
   assertEquals(body[0].operations.length, 1)
 
@@ -108,10 +108,10 @@ Deno.test("POST / two operations", async () => {
   await clearDenoKV()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
-  const createOperation = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
+  const createOperation = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
   const messages = [
     await signMessage({ raw: toRawOperation(createOperation) }, keyPair),
-    await signMessage({ raw: `Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031
+    await signMessage({ raw: `Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02
 ${ createOperation.hash }
 1
 body
@@ -128,7 +128,7 @@ line2
   const body = await response.json()
   assert(Array.isArray(body))
   assertEquals(body.length, 1)
-  assertEquals(body[0].name, "Vanic")
+  assertEquals(body[0].name, "Vani")
   assertEquals(body[0].operations.length, 2)
   assertEquals(body[0].operations[0].type, "CREATE")
   assertEquals(body[0].operations[1].type, "SET")
@@ -143,8 +143,8 @@ Deno.test("POST / two CREATE operations", async () => {
   await clearDenoKV()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
-  const createOperation1 = await createCreateOperation("Vanic@2B5E9HJQPKJADKCK0SD3G7XEHNFYSXKVPQ9CVS6EW8G1N5031")
-  const createOperation2 = await createCreateOperation("Test@PMTXGP6U13PDBFB9R5JP0C46NJFGJMY78BY16ANMVVEND5600")
+  const createOperation1 = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
+  const createOperation2 = await createCreateOperation("Item-1")
   const messages = [
     await signMessage({ raw: toRawOperation(createOperation1) }, keyPair),
     await signMessage({ raw: toRawOperation(createOperation2) }, keyPair)
@@ -159,8 +159,8 @@ Deno.test("POST / two CREATE operations", async () => {
   const body = await response.json()
   assert(Array.isArray(body))
   assertEquals(body.length, 2)
-  assertEquals(body[0].name, "Vanic")
-  assertEquals(body[1].name, "Test")
+  assertEquals(body[0].name, "Vani")
+  assertEquals(body[1].id, "Item-1")
 
   await stopServer()
 })
