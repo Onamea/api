@@ -9,9 +9,6 @@ import getMe from "./endpoints/me/get.ts"
 import post from "./endpoints/operations/post.ts"
 import getItemById from "./endpoints/items/getById.ts"
 
-import migration from "./migrations/endpoints.ts"
-await migration()
-
 // Create Oak application
 const app = new Application()
 const router = new Router()
