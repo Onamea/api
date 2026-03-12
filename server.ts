@@ -8,6 +8,9 @@ import getByName from "./endpoints/identitites/getByName.ts"
 import getMe from "./endpoints/me/get.ts"
 import post from "./endpoints/operations/post.ts"
 import getItemById from "./endpoints/items/getById.ts"
+import clear from "./migrations/clear.ts"
+
+await clear()
 
 // Create Oak application
 const app = new Application()
