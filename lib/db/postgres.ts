@@ -4,9 +4,9 @@ import type { ExtendedData } from "../Data.ts"
 import { type ClientOptions, Client } from "@db/postgres"
 
 const options: ClientOptions = {
-  user: "vanice",
+  user: "onamea",
   password: "<PASSWORD>",
-  database: "vanice",
+  database: "onamea",
   hostname: "localhost",
   port: 5432
 }
