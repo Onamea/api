@@ -1,4 +1,4 @@
-import { type RouterContext } from "@oak/oak/router"
+import type { RouterContext } from "@oak/oak/router"
 import type { NameKey } from "@onamea/types"
 import { type Identity, type Item, buildIdentityFromOperations, buildItemFromOperations, isCreateOperation } from "@onamea/crdt"
 import ROUTES from "../ROUTES.ts"
