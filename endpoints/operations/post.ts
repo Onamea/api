@@ -1,5 +1,6 @@
 import { type RouterContext } from "@oak/oak/router"
-import { type Identity, type Item, type NameKey, buildIdentityFromOperations, buildItemFromOperations, isCreateOperation } from "@onamea/types"
+import type { NameKey } from "@onamea/types"
+import { type Identity, type Item, buildIdentityFromOperations, buildItemFromOperations, isCreateOperation } from "@onamea/crdt"
 import ROUTES from "../ROUTES.ts"
 import { areIncomingMessages, cleanIncomingMessages, groupMessagesById, isAcceptedOperation, validatedMessagesToMessages, validateMessages } from "../../lib/Operation.ts"
 import toArray from "../../lib/utils/toArray.ts"
@@ -51,7 +52,7 @@ export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
               await insert(entry)
               response.push(entry)
             } else {
-              const nextItem = buildItemFromOperations(nextOperations, id)
+              const nextItem = await buildItemFromOperations(nextOperations, id)
               const entry = { ...nextItem, messages: nextMessages }
               await insertItem(entry)
               response.push(entry)

@@ -1,5 +1,7 @@
-import type { Message, Messages, Identity, NameKey, Operation, Id, Item } from "@onamea/types"
-import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildIdentityFromOperations, isNameKey, isSignedByOwner, isIdentityOperation } from "@onamea/types"
+import type { NameKey } from "@onamea/types"
+import type { Message, Messages, Identity, Operation, Id, Item } from "@onamea/crdt"
+import { isNameKey } from "@onamea/types"
+import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildIdentityFromOperations, isSignedByOwner, isIdentityOperation } from "@onamea/crdt"
 
 export type ValidatedMessage = Message & {
   operation: Operation

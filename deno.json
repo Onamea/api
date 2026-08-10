@@ -8,6 +8,7 @@
   "imports": {
     "@db/postgres": "jsr:@db/postgres@^0.19.5",
     "@oak/oak": "jsr:@oak/oak@^17.1.6",
+    "@onamea/crdt": "jsr:@onamea/crdt@^0.3.9",
     "@std/assert": "jsr:@std/assert@^1.0.15",
     "@onamea/types": "jsr:@onamea/types@^0.3.7",
     "@noble/secp256k1": "jsr:@noble/secp256k1@^2.3.0"

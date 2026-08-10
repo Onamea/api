@@ -11,6 +11,7 @@
     "jsr:@noble/secp256k1@^2.3.0": "2.3.0",
     "jsr:@oak/commons@1": "1.0.1",
     "jsr:@oak/oak@^17.1.6": "17.1.6",
+    "jsr:@onamea/crdt@~0.3.9": "0.3.9",
     "jsr:@onamea/types@~0.3.7": "0.3.7",
     "jsr:@scure/base@*": "1.2.6",
     "jsr:@scure/base@2.0.0": "2.0.0",
@@ -32,6 +33,7 @@
     "jsr:@std/media-types@1": "1.1.0",
     "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.0.8": "1.1.1",
+    "npm:@cfworker/json-schema@^4.1.1": "4.1.1",
     "npm:@noble/hashes@*": "1.8.0",
     "npm:@noble/secp256k1@2.3.0": "2.3.0",
     "npm:@types/node@*": "22.15.15",
@@ -90,6 +92,13 @@
         "jsr:@std/media-types",
         "jsr:@std/path@1",
         "npm:path-to-regexp"
+      ]
+    },
+    "@onamea/crdt@0.3.9": {
+      "integrity": "7d9e108f168d80c39dabd8d2dd8f19a61bd7ab9d00107e89900ed155f624156b",
+      "dependencies": [
+        "jsr:@onamea/types",
+        "npm:@cfworker/json-schema"
       ]
     },
     "@onamea/types@0.3.7": {
@@ -167,6 +176,9 @@
     }
   },
   "npm": {
+    "@cfworker/json-schema@4.1.1": {
+      "integrity": "sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og=="
+    },
     "@noble/hashes@1.8.0": {
       "integrity": "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="
     },
@@ -467,6 +479,7 @@
       "jsr:@db/postgres@~0.19.5",
       "jsr:@noble/secp256k1@^2.3.0",
       "jsr:@oak/oak@^17.1.6",
+      "jsr:@onamea/crdt@~0.3.9",
       "jsr:@onamea/types@~0.3.7",
       "jsr:@std/assert@^1.0.15"
     ]

@@ -1,4 +1,5 @@
-import { type Identity, type NameKey, buildIdentityFromOperations, isMessage, parseRawOperation } from "@onamea/types"
+import type { NameKey } from "@onamea/types"
+import { type Identity, buildIdentityFromOperations, isMessage, parseRawOperation } from "@onamea/crdt"
 import message from "../config/me.json" with { type: "json" }
 
 let identity: Identity | undefined
