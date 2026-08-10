@@ -1,4 +1,4 @@
-import { createCreateOperation } from "@vanice/types"
+import { createCreateOperation } from "@onamea/types"
 import { ExtendedData } from "../lib/Data.ts"
 
 const kv = await Deno.openKv()

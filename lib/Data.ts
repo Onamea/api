@@ -1,4 +1,4 @@
-import type { Fingerprint, FingerprintDisplay, Name, PrimaryKey, PrimaryName, Signature } from "@vanice/types"
+import type { Fingerprint, FingerprintDisplay, Name, PrimaryKey, PrimaryName, Signature } from "@onamea/types"
 import {
   displayFingerprint,
   readCryptoNameFromPrimaryKey,
@@ -11,7 +11,7 @@ import {
   messageToHash,
   verify,
   primaryKeyToPublicKey,
-} from "@vanice/types"
+} from "@onamea/types"
 import isObject from "./utils/isObject.ts"
 
 type Epoch = number

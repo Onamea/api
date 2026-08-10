@@ -1,6 +1,6 @@
 import { RouterContext } from "@oak/oak/router"
 import ROUTES from "../ROUTES.ts"
-import { isNameKey } from "@vanice/types"
+import { isNameKey } from "@onamea/types"
 import { retrieveById } from "../../lib/db/kv.ts"
 
 export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_ID>) => {

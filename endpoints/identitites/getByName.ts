@@ -1,6 +1,6 @@
 import { RouterContext } from "@oak/oak/router"
 import ROUTES from "../ROUTES.ts"
-import { isFingerprintedName, isName, parseFingerprintedName } from "@vanice/types"
+import { isFingerprintedName, isName, parseFingerprintedName } from "@onamea/types"
 import { retrieveByName } from "../../lib/db/kv.ts"
 
 export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_NAME>) => {

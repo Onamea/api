@@ -1,4 +1,4 @@
-import { fromPublicKeyDisplay, Identity } from "@vanice/types"
+import { fromPublicKeyDisplay, Identity } from "@onamea/types"
 
 const kv = await Deno.openKv()
 

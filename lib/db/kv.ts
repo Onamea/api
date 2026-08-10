@@ -1,5 +1,5 @@
-import type { FingerprintDisplay, Name, NameKey, PrimaryKey, PrimaryName, Identity, Messages, Item, Id } from "@vanice/types"
-import { fingerprintDisplayStartsWith, isId, parseNameKey, toPrimaryName } from "@vanice/types"
+import type { FingerprintDisplay, Name, NameKey, PrimaryKey, PrimaryName, Identity, Messages, Item, Id } from "@onamea/types"
+import { fingerprintDisplayStartsWith, isId, parseNameKey, toPrimaryName } from "@onamea/types"
 
 const kv = await Deno.openKv()
 

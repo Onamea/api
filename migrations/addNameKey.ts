@@ -1,4 +1,4 @@
-import { Identity, toNameKey } from "@vanice/types"
+import { Identity, toNameKey } from "@onamea/types"
 
 const kv = await Deno.openKv()
 

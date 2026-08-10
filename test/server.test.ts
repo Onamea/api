@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert"
-import { createCreateOperation, keyPairFromPrivateKey, signMessage, toRawOperation } from "@vanice/types"
+import { createCreateOperation, keyPairFromPrivateKey, signMessage, toRawOperation } from "@onamea/types"
 import { cryptoName, privateKey } from "./data.mock.ts"
 
 const BASE_URL = "http://localhost:8000"

@@ -1,4 +1,4 @@
-import { buildIdentityFromOperations, Identity } from "@vanice/types"
+import { buildIdentityFromOperations, Identity } from "@onamea/types"
 
 const kv = await Deno.openKv()
 

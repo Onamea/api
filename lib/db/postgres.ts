@@ -1,5 +1,5 @@
-import type { Fingerprint, Name } from "@vanice/types"
-import { toPrimaryName } from "@vanice/types"
+import type { Fingerprint, Name } from "@onamea/types"
+import { toPrimaryName } from "@onamea/types"
 import type { ExtendedData } from "../Data.ts"
 import { type ClientOptions, Client } from "@db/postgres"
 

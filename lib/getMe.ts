@@ -1,4 +1,4 @@
-import { type Identity, type NameKey, buildIdentityFromOperations, isMessage, parseRawOperation } from "@vanice/types"
+import { type Identity, type NameKey, buildIdentityFromOperations, isMessage, parseRawOperation } from "@onamea/types"
 import message from "../config/me.json" with { type: "json" }
 
 let identity: Identity | undefined

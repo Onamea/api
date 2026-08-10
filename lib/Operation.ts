@@ -1,5 +1,5 @@
-import type { Message, Messages, Identity, NameKey, Operation, Id, Item } from "@vanice/types"
-import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildIdentityFromOperations, isNameKey, isSignedByOwner, isIdentityOperation } from "@vanice/types"
+import type { Message, Messages, Identity, NameKey, Operation, Id, Item } from "@onamea/types"
+import { isMessage, verifyMessage, parseRawOperation, createCreateOperation, buildIdentityFromOperations, isNameKey, isSignedByOwner, isIdentityOperation } from "@onamea/types"
 
 export type ValidatedMessage = Message & {
   operation: Operation
