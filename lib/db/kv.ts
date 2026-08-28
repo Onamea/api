@@ -1,16 +1,15 @@
-import type { FingerprintDisplay, Name, NameKey, PrimaryKey, PrimaryName } from "@onamea/types"
-import { fingerprintDisplayStartsWith, parseNameKey, toPrimaryName } from "@onamea/types"
-import type { Identity, Messages, Item, Id } from "@onamea/crdt"
+import type { FingerprintDisplay, Name, NameKey } from "@onamea/types"
+import { fingerprintDisplayStartsWith, nameKeyToFingerprintDisplay, parseNameKey } from "@onamea/types"
+import type { Id, Identity, Item, Messages } from "@onamea/crdt"
 import { isId } from "@onamea/crdt"
 
 const kv = await Deno.openKv()
 
-type Key = ["identities", PrimaryName, PrimaryKey]
+type Key = ["identities", Name, NameKey]
 export type IdentityWithMessages = Identity & { messages: Messages }
 
 type ItemKey = ["items", Id]
 export type ItemWithMessages = Item & { messages: Messages }
-
 
 export const retrieveAll = async (): Promise<IdentityWithMessages[]> => {
   const entries = kv.list({ prefix: ["identities"] })
@@ -24,32 +23,36 @@ export const retrieveAll = async (): Promise<IdentityWithMessages[]> => {
 }
 
 export const retrieveById = async (id: NameKey): Promise<IdentityWithMessages | undefined> => {
-  const [primaryKey, name] = parseNameKey(id)
-  const primaryName = toPrimaryName(name)
-  const key: Key = ["identities", primaryName, primaryKey]
+  const [, name] = parseNameKey(id)
+  const key: Key = ["identities", name, id]
   const result = await kv.get(key)
   if (result.value === null) return undefined
   return result.value as IdentityWithMessages
 }
 
-export const retrieveByName = async (name: Name, fingerprintDisplay?: FingerprintDisplay): Promise<IdentityWithMessages[]> => {
-  const primaryName = toPrimaryName(name)
-  const entries = kv.list({ prefix: ["identities", primaryName] })
+export const retrieveByName = async (
+  name: Name,
+  fingerprintDisplaySuffix?: FingerprintDisplay
+): Promise<IdentityWithMessages[]> => {
+  const entries = kv.list({ prefix: ["identities", name] })
   const values: IdentityWithMessages[] = []
   for await (const entry of entries) {
     const data = entry.value as IdentityWithMessages
-    if (fingerprintDisplay === undefined || fingerprintDisplayStartsWith(data.fingerprintDisplay, fingerprintDisplay)) {
+    const fingerprintDisplay = await nameKeyToFingerprintDisplay(data.id)
+    if (
+      fingerprintDisplaySuffix === undefined ||
+      fingerprintDisplayStartsWith(fingerprintDisplay, fingerprintDisplaySuffix)
+    ) {
       values.push(data)
     }
   }
   return values
 }
 
-export const insert = async (data: IdentityWithMessages) => {
-  const { name, primaryKey } = data
-  const primaryName = toPrimaryName(name)
-  const key: Key = ["identities", primaryName, primaryKey]
-  await kv.set(key, data)
+export const insert = async (identity: IdentityWithMessages) => {
+  const [, name] = parseNameKey(identity.id)
+  const key: Key = ["identities", name, identity.id]
+  await kv.set(key, identity)
 }
 
 export const retrieveItemById = async (id: Id): Promise<ItemWithMessages | undefined> => {

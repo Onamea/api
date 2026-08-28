@@ -1,14 +1,8 @@
-/*
-primaryKey: PrimaryKey
-name: Name
-signature: Signature
-*/
-
-CREATE TABLE IF NOT EXISTS data (
-  primaryKey VARCHAR(53) PRIMARY KEY,
-  name VARCHAR(53) NOT NULL,
-  primaryName VARCHAR(53) NOT NULL,
-  fingerprint VARCHAR(106) NOT NULL,
-  signature VARCHAR(128) NOT NULL
+CREATE TABLE IF NOT EXISTS identities (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  identity JSONB NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS identities_name_idx ON identities (name);
 
