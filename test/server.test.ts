@@ -96,7 +96,7 @@ Deno.test("POST / single operation", async () => {
   assert(Array.isArray(body))
   assertEquals(body.length, 1)
   assertEquals(body[0].id, "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
-  assertEquals(body[0].fingerprintedName, "Vani💪❤️❤️🎄🌙🔥")
+  assertEquals(body[0].displayName, "Vani💪❤️❤️🎄🌙🔥")
   assertEquals(body[0].operations[0].type, "CREATE")
   assertEquals(body[0].operations.length, 1)
 

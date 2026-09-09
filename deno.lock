@@ -1,13 +1,15 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@db/postgres@~0.19.5": "0.19.5",
     "jsr:@noble/curves@2.3.0": "2.3.0",
     "jsr:@noble/ed25519@^3.1.0": "3.1.0",
     "jsr:@noble/hashes@2.3.0": "2.3.0",
     "jsr:@noble/secp256k1@3.1.0": "3.1.0",
+    "jsr:@noble/secp256k1@^3.1.0": "3.2.0",
     "jsr:@oak/commons@1": "1.0.1",
     "jsr:@oak/oak@^17.2.0": "17.2.0",
-    "jsr:@onamea/crdt@0.5": "0.5.0",
+    "jsr:@onamea/crdt@0.6.1": "0.6.1",
     "jsr:@onamea/types@~0.5.2": "0.5.3",
     "jsr:@onamea/types@~0.5.3": "0.5.3",
     "jsr:@scure/base@2.3.0": "2.3.0",
@@ -16,18 +18,33 @@
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/bytes@1": "1.0.6",
+    "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/crypto@1": "1.0.5",
+    "jsr:@std/crypto@^1.0.4": "1.0.5",
     "jsr:@std/encoding@1": "1.0.11",
     "jsr:@std/encoding@^1.0.11": "1.0.11",
+    "jsr:@std/encoding@^1.0.9": "1.0.11",
+    "jsr:@std/fmt@^1.0.6": "1.0.10",
     "jsr:@std/http@1": "1.1.3",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/media-types@1": "1.1.0",
     "jsr:@std/path@1": "1.1.6",
+    "jsr:@std/path@^1.0.8": "1.1.6",
     "npm:@cfworker/json-schema@^4.1.1": "4.1.1",
     "npm:path-to-regexp@^6.3.0": "6.3.0"
   },
   "jsr": {
+    "@db/postgres@0.19.5": {
+      "integrity": "afdbe608bd066cda2ee5dba37c416d332098b9238c51aec223331108e281954c",
+      "dependencies": [
+        "jsr:@std/bytes@^1.0.5",
+        "jsr:@std/crypto@^1.0.4",
+        "jsr:@std/encoding@^1.0.9",
+        "jsr:@std/fmt",
+        "jsr:@std/path@^1.0.8"
+      ]
+    },
     "@noble/curves@2.3.0": {
       "integrity": "bd5045770794f80d2db22b1819cf94b8e4c0254b6ee0da178b860c61c37bf324",
       "dependencies": [
@@ -43,12 +60,15 @@
     "@noble/secp256k1@3.1.0": {
       "integrity": "cd6b02d94b96ce37f6ef332fa20ebaeefa603edda5e3488f15be06fd1a52a359"
     },
+    "@noble/secp256k1@3.2.0": {
+      "integrity": "16c3482e6da33e3723557b25255e8f73105600c62a4633c78ba5771ffe877147"
+    },
     "@oak/commons@1.0.1": {
       "integrity": "889ff210f0b4292591721be07244ecb1b5c118742f5273c70cf30d7cd4184d0c",
       "dependencies": [
         "jsr:@std/assert@1",
-        "jsr:@std/bytes",
-        "jsr:@std/crypto",
+        "jsr:@std/bytes@1",
+        "jsr:@std/crypto@1",
         "jsr:@std/encoding@1",
         "jsr:@std/http",
         "jsr:@std/media-types"
@@ -59,15 +79,15 @@
       "dependencies": [
         "jsr:@oak/commons",
         "jsr:@std/assert@1",
-        "jsr:@std/bytes",
+        "jsr:@std/bytes@1",
         "jsr:@std/http",
         "jsr:@std/media-types",
-        "jsr:@std/path",
+        "jsr:@std/path@1",
         "npm:path-to-regexp"
       ]
     },
-    "@onamea/crdt@0.5.0": {
-      "integrity": "e7d933daba0f3a656817eb99aaecfd076478191c6e9a63180166cac85b274160",
+    "@onamea/crdt@0.6.1": {
+      "integrity": "3703996dc13fcb4db33940fe2ab27a527caf596e3c5ce0b8176b76f217646c99",
       "dependencies": [
         "jsr:@onamea/types@~0.5.2",
         "npm:@cfworker/json-schema"
@@ -78,7 +98,7 @@
       "dependencies": [
         "jsr:@noble/ed25519",
         "jsr:@noble/hashes",
-        "jsr:@noble/secp256k1",
+        "jsr:@noble/secp256k1@3.1.0",
         "jsr:@scure/bip32",
         "jsr:@scure/bip39"
       ]
@@ -115,6 +135,9 @@
     "@std/encoding@1.0.11": {
       "integrity": "e7cef2f0b3153bccc17431e7c864a1de03a4b6d9647389c43e08aaa775d37385"
     },
+    "@std/fmt@1.0.10": {
+      "integrity": "90dfba288802ac6de82fb31d0917eb9e4450b9925b954d5e51fc29ac07419db5"
+    },
     "@std/http@1.1.3": {
       "integrity": "73a98e05ff58aa18bea562d286172e6c815b1eddd4fcab194beda19e3683b88c",
       "dependencies": [
@@ -147,7 +170,7 @@
       "jsr:@db/postgres@~0.19.5",
       "jsr:@noble/secp256k1@^3.1.0",
       "jsr:@oak/oak@^17.2.0",
-      "jsr:@onamea/crdt@0.5",
+      "jsr:@onamea/crdt@0.6.1",
       "jsr:@onamea/types@~0.5.3",
       "jsr:@std/assert@^1.0.19"
     ]
