@@ -5,7 +5,6 @@
     "jsr:@noble/ed25519@^3.1.0": "3.1.0",
     "jsr:@noble/hashes@2.3.0": "2.3.0",
     "jsr:@noble/secp256k1@3.1.0": "3.1.0",
-    "jsr:@noble/secp256k1@^3.1.0": "3.2.0",
     "jsr:@oak/commons@1": "1.0.1",
     "jsr:@oak/oak@^17.2.0": "17.2.0",
     "jsr:@onamea/crdt@0.6.1": "0.6.1",
@@ -44,9 +43,6 @@
     "@noble/secp256k1@3.1.0": {
       "integrity": "cd6b02d94b96ce37f6ef332fa20ebaeefa603edda5e3488f15be06fd1a52a359"
     },
-    "@noble/secp256k1@3.2.0": {
-      "integrity": "16c3482e6da33e3723557b25255e8f73105600c62a4633c78ba5771ffe877147"
-    },
     "@oak/commons@1.0.1": {
       "integrity": "889ff210f0b4292591721be07244ecb1b5c118742f5273c70cf30d7cd4184d0c",
       "dependencies": [
@@ -82,7 +78,7 @@
       "dependencies": [
         "jsr:@noble/ed25519",
         "jsr:@noble/hashes",
-        "jsr:@noble/secp256k1@3.1.0",
+        "jsr:@noble/secp256k1",
         "jsr:@scure/bip32",
         "jsr:@scure/bip39"
       ]
@@ -148,7 +144,6 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@noble/secp256k1@^3.1.0",
       "jsr:@oak/oak@^17.2.0",
       "jsr:@onamea/crdt@0.6.1",
       "jsr:@onamea/types@~0.5.3",
