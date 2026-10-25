@@ -1,4 +1,4 @@
-import { RouterContext } from "@oak/oak/router"
+import type { RouterContext } from "@oak/oak/router"
 import ROUTES from "../ROUTES.ts"
 import { retrieveAll } from "../../lib/db/kv.ts"
 

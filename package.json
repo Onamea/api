@@ -1,0 +1,27 @@
+{
+  "name": "onamea-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.ts",
+    "start": "node server.ts",
+    "test": "node --test test/",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck"
+  },
+  "dependencies": {
+    "@oak/oak": "jsr:^17.2.0",
+    "@onamea/crdt": "jsr:0.6.1",
+    "@onamea/types": "jsr:^0.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "pnpm@12.14.0"
+}

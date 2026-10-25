@@ -1,4 +1,4 @@
-import { Context } from "@oak/oak/context"
+import type { Context } from "@oak/oak/context"
 
 export default async (ctx: Context, next: () => Promise<unknown>) => {
   ctx.response.headers.set("Access-Control-Allow-Origin", "*")

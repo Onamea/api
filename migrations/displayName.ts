@@ -1,4 +1,4 @@
-import { NameKey, nameKeyToFingerprintedName } from "@onamea/types"
+import { type NameKey, nameKeyToFingerprintedName } from "@onamea/types"
 
 const kv = await Deno.openKv()
 
