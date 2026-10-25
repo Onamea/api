@@ -17,7 +17,7 @@ import {
   validateMessages
 } from "../../lib/Operation.ts"
 import toArray from "../../lib/utils/toArray.ts"
-import { insert, insertItem, retrieveById, retrieveItemById } from "../../lib/db/kv.ts"
+import { getIdentityById, getItemById, upsertIdentity, upsertItem } from "../../lib/db/kv.ts"
 
 export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
   const body = await ctx.request.body.json()
@@ -41,7 +41,7 @@ export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
         for (const id in groupedMessages[key as keyof typeof groupedMessages]) {
           const isIdentity = key === "identity"
           const messages = groupedMessages[key as keyof typeof groupedMessages][id]
-          const currentEntry = isIdentity ? await retrieveById(id as NameKey) : await retrieveItemById(id)
+          const currentEntry = isIdentity ? await getIdentityById(id as NameKey) : await getItemById(id)
           if (currentEntry === undefined && messages.some(({ operation }) => isCreateOperation(operation)) === false) {
             throw new Error(
               `${isIdentity ? "Identity" : "Item"}: ${id} does not exist on this server. And no operation of type CREATE supplied.`
@@ -61,12 +61,12 @@ export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
             if (isIdentity) {
               const nextIdentity = await buildIdentityFromOperations(nextOperations, id as NameKey, true)
               const entry = { ...nextIdentity, messages: nextMessages }
-              await insert(entry)
+              await upsertIdentity(entry)
               response.push(entry)
             } else {
               const nextItem = await buildItemFromOperations(nextOperations, id)
               const entry = { ...nextItem, messages: nextMessages }
-              await insertItem(entry)
+              await upsertItem(entry)
               response.push(entry)
             }
           }

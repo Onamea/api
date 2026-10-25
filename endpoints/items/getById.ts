@@ -1,7 +1,7 @@
 import type { RouterContext } from "@oak/oak/router"
 import ROUTES from "../ROUTES.ts"
 import { isId } from "@onamea/crdt"
-import { retrieveItemById } from "../../lib/db/kv.ts"
+import { getItemById } from "../../lib/db/kv.ts"
 
 export default async (ctx: RouterContext<typeof ROUTES.GET_ITEMS_BY_ID>) => {
   const id = ctx.params.id
@@ -12,7 +12,7 @@ export default async (ctx: RouterContext<typeof ROUTES.GET_ITEMS_BY_ID>) => {
     return
   }
 
-  const item = await retrieveItemById(id)
+  const item = await getItemById(id)
   if (item === undefined) {
     ctx.response.status = 404
     ctx.response.body = { error: `No Item with Id: ${id} found` }

@@ -1,7 +1,7 @@
 import type { RouterContext } from "@oak/oak/router"
 import ROUTES from "../ROUTES.ts"
 import { isNameKey } from "@onamea/types"
-import { retrieveById } from "../../lib/db/kv.ts"
+import { getIdentityById } from "../../lib/db/kv.ts"
 
 export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_ID>) => {
   const id = ctx.params.id
@@ -12,7 +12,7 @@ export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_ID>) =>
     return
   }
 
-  const identity = await retrieveById(id)
+  const identity = await getIdentityById(id)
   if (identity === undefined) {
     ctx.response.status = 404
     ctx.response.body = { error: `No Identity with Id: ${id} found` }

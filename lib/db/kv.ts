@@ -11,7 +11,7 @@ export type IdentityWithMessages = Identity & { messages: Messages }
 type ItemKey = ["items", Id]
 export type ItemWithMessages = Item & { messages: Messages }
 
-export const retrieveAll = async (): Promise<IdentityWithMessages[]> => {
+export const listIdentities = async (): Promise<IdentityWithMessages[]> => {
   const entries = kv.list({ prefix: ["identities"] })
   const values: IdentityWithMessages[] = []
   for await (const entry of entries) {
@@ -22,7 +22,7 @@ export const retrieveAll = async (): Promise<IdentityWithMessages[]> => {
   return values
 }
 
-export const retrieveById = async (id: NameKey): Promise<IdentityWithMessages | undefined> => {
+export const getIdentityById = async (id: NameKey): Promise<IdentityWithMessages | undefined> => {
   const [, name] = parseNameKey(id)
   const key: Key = ["identities", name, id]
   const result = await kv.get(key)
@@ -30,7 +30,7 @@ export const retrieveById = async (id: NameKey): Promise<IdentityWithMessages | 
   return result.value as IdentityWithMessages
 }
 
-export const retrieveByName = async (
+export const findIdentitiesByName = async (
   name: Name,
   fingerprintDisplaySuffix?: FingerprintDisplay
 ): Promise<IdentityWithMessages[]> => {
@@ -49,13 +49,13 @@ export const retrieveByName = async (
   return values
 }
 
-export const insert = async (identity: IdentityWithMessages) => {
+export const upsertIdentity = async (identity: IdentityWithMessages) => {
   const [, name] = parseNameKey(identity.id)
   const key: Key = ["identities", name, identity.id]
   await kv.set(key, identity)
 }
 
-export const retrieveItemById = async (id: Id): Promise<ItemWithMessages | undefined> => {
+export const getItemById = async (id: Id): Promise<ItemWithMessages | undefined> => {
   if (isId(id) === false) {
     throw new Error("Invalid Id")
   }
@@ -65,7 +65,7 @@ export const retrieveItemById = async (id: Id): Promise<ItemWithMessages | undef
   return result.value as ItemWithMessages
 }
 
-export const insertItem = async (item: ItemWithMessages) => {
+export const upsertItem = async (item: ItemWithMessages) => {
   const key: ItemKey = ["items", item.id]
   await kv.set(key, item)
 }
