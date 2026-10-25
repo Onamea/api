@@ -6,7 +6,6 @@
     "test": "deno test --allow-net --allow-run --unstable-kv"
   },
   "imports": {
-    "@db/postgres": "jsr:@db/postgres@^0.19.5",
     "@oak/oak": "jsr:@oak/oak@^17.2.0",
     "@onamea/crdt": "jsr:@onamea/crdt@0.6.1",
     "@std/assert": "jsr:@std/assert@^1.0.19",
