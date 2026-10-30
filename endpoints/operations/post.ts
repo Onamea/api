@@ -1,26 +1,19 @@
-import type { RouterContext } from "@oak/oak/router"
 import type { NameKey } from "@onamea/types"
-import {
-  type Identity,
-  type Item,
-  buildIdentityFromOperations,
-  buildItemFromOperations,
-  isCreateOperation
-} from "@onamea/crdt"
-import ROUTES from "../ROUTES.ts"
+import { type Identity, type Item, buildIdentityFromOperations, buildItemFromOperations } from "@onamea/crdt"
+import type { Context } from "hono"
+import routes from "../routes.ts"
+import type { AppEnv } from "../../lib/env.ts"
 import {
   areIncomingMessages,
   cleanIncomingMessages,
   groupMessagesById,
-  isAcceptedOperation,
   validatedMessagesToMessages,
   validateMessages
 } from "../../lib/Operation.ts"
 import toArray from "../../lib/utils/toArray.ts"
-import { getIdentityById, getItemById, upsertIdentity, upsertItem } from "../../lib/db/kv.ts"
 
-export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
-  const body = await ctx.request.body.json()
+export default async (ctx: Context<AppEnv, typeof routes.POST>) => {
+  const body = await ctx.req.json()
   const arr = toArray(body)
 
   if (areIncomingMessages(arr)) {
@@ -29,58 +22,64 @@ export default async (ctx: RouterContext<typeof ROUTES.POST>) => {
     const invalidMessages = validatedMessages.filter(({ isValid }) => isValid === false)
 
     if (invalidMessages.length > 0) {
-      ctx.response.status = 400
-      ctx.response.body = { error: "Invalid Messages: " + JSON.stringify(validatedMessagesToMessages(invalidMessages)) }
+      return ctx.json(
+        { error: "Invalid Messages: " + JSON.stringify(validatedMessagesToMessages(invalidMessages)) },
+        400
+      )
     }
 
     try {
+      const db = ctx.get("db")
       const groupedMessages = groupMessagesById(validatedMessages)
       const response: (Identity | Item)[] = []
 
-      for (const key in groupedMessages) {
-        for (const id in groupedMessages[key as keyof typeof groupedMessages]) {
-          const isIdentity = key === "identity"
-          const messages = groupedMessages[key as keyof typeof groupedMessages][id]
-          const currentEntry = isIdentity ? await getIdentityById(id as NameKey) : await getItemById(id)
-          if (currentEntry === undefined && messages.some(({ operation }) => isCreateOperation(operation)) === false) {
-            throw new Error(
-              `${isIdentity ? "Identity" : "Item"}: ${id} does not exist on this server. And no operation of type CREATE supplied.`
-            )
-          }
-          const newMessages = currentEntry
-            ? messages.filter(({ operation }) => isAcceptedOperation(currentEntry, operation))
-            : messages
-          if (newMessages.length === 0 && currentEntry !== undefined) {
-            response.push(currentEntry)
-          } else {
-            const nextValidatedMessages = await validateMessages(
-              currentEntry ? [...currentEntry.messages, ...newMessages] : newMessages
-            )
-            const nextOperations = nextValidatedMessages.map(({ operation }) => operation)
-            const nextMessages = validatedMessagesToMessages(nextValidatedMessages)
-            if (isIdentity) {
-              const nextIdentity = await buildIdentityFromOperations(nextOperations, id as NameKey, true)
-              const entry = { ...nextIdentity, messages: nextMessages }
-              await upsertIdentity(entry)
-              response.push(entry)
-            } else {
-              const nextItem = await buildItemFromOperations(nextOperations, id)
-              const entry = { ...nextItem, messages: nextMessages }
-              await upsertItem(entry)
-              response.push(entry)
-            }
+      for (const [id, messages] of groupedMessages) {
+        const incomingRecords = messages.map(validatedMessage => ({
+          operation: validatedMessage.operation,
+          message: {
+            raw: validatedMessage.raw,
+            cryptoName: validatedMessage.cryptoName,
+            publicKey: validatedMessage.publicKey,
+            signature: validatedMessage.signature,
+            datetime: validatedMessage.datetime
+          },
+          isOwnerSigned: validatedMessage.isOwnerSigned
+        }))
+        const { records, added, isIdentity, becameIdentity } = await ctx
+          .get("operationStore")
+          .append(id, incomingRecords)
+        const newRecords = added.map(record => ({
+          operation: record.operation,
+          message: record.message,
+          isOwnerSigned: record.isOwnerSigned
+        }))
+
+        if (newRecords.length > 0) {
+          try {
+            const identityProjection = isIdentity ? (becameIdentity ? records : newRecords) : []
+            await db.appendEntityMessages(id, newRecords, identityProjection)
+          } catch (error) {
+            console.error("Failed to project entity messages to KV", error)
           }
         }
+
+        const nextEntity = {
+          operations: records.map(({ operation }) => operation),
+          messages: records.map(({ message }) => message)
+        }
+        const entry = isIdentity
+          ? await buildIdentityFromOperations(nextEntity.operations, id as NameKey, true)
+          : await buildItemFromOperations(nextEntity.operations, id)
+        const entryWithMessages = { ...entry, messages: nextEntity.messages }
+        response.push(entryWithMessages)
       }
 
-      ctx.response.body = response
+      return ctx.json(response)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      ctx.response.status = 400
-      ctx.response.body = { error: errorMessage }
+      return ctx.json({ error: errorMessage }, 400)
     }
   } else {
-    ctx.response.status = 400
-    ctx.response.body = { error: "Invalid request body" }
+    return ctx.json({ error: "Invalid request body" }, 400)
   }
 }

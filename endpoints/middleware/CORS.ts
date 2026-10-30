@@ -1,12 +1,13 @@
-import type { Context } from "@oak/oak/context"
+import type { MiddlewareHandler } from "hono"
 
-export default async (ctx: Context, next: () => Promise<unknown>) => {
-  ctx.response.headers.set("Access-Control-Allow-Origin", "*")
-  ctx.response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-  ctx.response.headers.set("Access-Control-Allow-Headers", "Content-Type")
-  if (ctx.request.method === "OPTIONS") {
-    ctx.response.status = 204
-    return
+const CORS: MiddlewareHandler = async (ctx, next) => {
+  ctx.header("Access-Control-Allow-Origin", "*")
+  ctx.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+  ctx.header("Access-Control-Allow-Headers", "Content-Type")
+  if (ctx.req.method === "OPTIONS") {
+    return ctx.body(null, 204)
   }
   await next()
 }
+
+export default CORS

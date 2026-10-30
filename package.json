@@ -1,27 +1,29 @@
 {
-  "name": "onamea-api",
+  "name": "@onamea/api",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch server.ts",
-    "start": "node server.ts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "test": "node --test test/",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "clear:dev": "rm -rf .wrangler/state/*"
   },
   "dependencies": {
-    "@oak/oak": "jsr:^17.2.0",
-    "@onamea/crdt": "jsr:0.6.1",
-    "@onamea/types": "jsr:^0.5.3"
+    "@onamea/crdt": "jsr:0.6.5",
+    "@onamea/types": "jsr:^0.5.3",
+    "hono": "^4.13.13"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "oxfmt": "^0.73.0",
     "oxlint": "^1.88.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "^4.152.0"
   },
   "packageManager": "pnpm@12.14.0"
 }

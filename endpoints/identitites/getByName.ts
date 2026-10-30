@@ -1,19 +1,17 @@
-import type { RouterContext } from "@oak/oak/router"
-import ROUTES from "../ROUTES.ts"
+import type { Context } from "hono"
 import { isFingerprintedName, isName, parseFingerprintedName } from "@onamea/types"
-import { findIdentitiesByName } from "../../lib/db/kv.ts"
+import type { AppEnv } from "../../lib/env.ts"
+import routes from "../routes.ts"
 
-export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_NAME>) => {
-  const suppliedName = ctx.params.name
+export default async (ctx: Context<AppEnv, typeof routes.GET_IDENTITIES_BY_NAME>) => {
+  const suppliedName = ctx.req.param("name")
   const [name, fingerprintDisplay] = isFingerprintedName(suppliedName)
     ? parseFingerprintedName(suppliedName)
     : [suppliedName]
 
   if (isName(name) === false) {
-    ctx.response.status = 400
-    ctx.response.body = { error: "Invalid param: name" }
-    return
+    return ctx.json({ error: "Invalid param: name" }, 400)
   }
 
-  ctx.response.body = await findIdentitiesByName(name, fingerprintDisplay)
+  return ctx.json(await ctx.get("db").findIdentitiesByName(name, fingerprintDisplay))
 }

@@ -1,23 +1,19 @@
-import type { RouterContext } from "@oak/oak/router"
-import ROUTES from "../ROUTES.ts"
+import type { Context } from "hono"
 import { isNameKey } from "@onamea/types"
-import { getIdentityById } from "../../lib/db/kv.ts"
+import type { AppEnv } from "../../lib/env.ts"
+import routes from "../routes.ts"
 
-export default async (ctx: RouterContext<typeof ROUTES.GET_IDENTITIES_BY_ID>) => {
-  const id = ctx.params.id
+export default async (ctx: Context<AppEnv, typeof routes.GET_IDENTITIES_BY_ID>) => {
+  const id = ctx.req.param("id")
 
   if (isNameKey(id) === false) {
-    ctx.response.status = 400
-    ctx.response.body = { error: `Invalid Identity Id: ${id}` }
-    return
+    return ctx.json({ error: `Invalid Identity Id: ${id}` }, 400)
   }
 
-  const identity = await getIdentityById(id)
+  const identity = await ctx.get("db").getIdentityById(id)
   if (identity === undefined) {
-    ctx.response.status = 404
-    ctx.response.body = { error: `No Identity with Id: ${id} found` }
-    return
+    return ctx.json({ error: `No Identity with Id: ${id} found` }, 404)
   }
 
-  ctx.response.body = identity
+  return ctx.json(identity)
 }

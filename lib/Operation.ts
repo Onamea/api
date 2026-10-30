@@ -1,4 +1,5 @@
 import type { NameKey } from "@onamea/types"
+import { messageToHash } from "@onamea/types"
 import type { Message, Messages, Identity, Operation, Id, Item } from "@onamea/crdt"
 import { isNameKey } from "@onamea/types"
 import {
@@ -13,7 +14,7 @@ import {
 
 export type ValidatedMessage = Message & {
   operation: Operation
-  isIdentity: boolean
+  isOwnerSigned: boolean
   isValid: boolean
   error?: Error
 }
@@ -32,32 +33,50 @@ export const cleanIncomingMessages = (arr: Messages): Messages => {
   return arr.map(cleanIncomingMessage)
 }
 
-const compareMessages = (a: Message, b: Message): boolean => {
-  return a.raw === b.raw && a.publicKey === b.publicKey && a.signature === b.signature
+const compareMessages = (a: ValidatedMessage, b: ValidatedMessage): boolean => {
+  return (
+    a.operation.hash === b.operation.hash &&
+    a.cryptoName === b.cryptoName &&
+    a.publicKey === b.publicKey &&
+    a.signature === b.signature
+  )
 }
 
-export const filterDuplicateMessages = <T extends Message>(messages: T[]): T[] => {
+export const filterDuplicateMessages = (messages: ValidatedMessages): ValidatedMessages => {
   return messages.filter(
     (currentMessage, index, self) => index === self.findIndex(message => compareMessages(currentMessage, message))
   )
 }
 
-type R = Record<Id, ValidatedMessages>
-type ValidatedMessagesRecord = { identity: R; item: R }
-export const groupMessagesById = (messages: ValidatedMessages): ValidatedMessagesRecord => {
+export const isAcceptedMessage = async (
+  messages: Messages | undefined,
+  message: ValidatedMessage
+): Promise<boolean> => {
+  for (const existingMessage of messages ?? []) {
+    if (
+      existingMessage.publicKey === message.publicKey &&
+      existingMessage.cryptoName === message.cryptoName &&
+      existingMessage.signature === message.signature &&
+      (await messageToHash(existingMessage.raw)) === message.operation.hash
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+export const groupMessagesById = (messages: ValidatedMessages): Map<Id, ValidatedMessages> => {
   const uniqueMessages = filterDuplicateMessages(messages)
-  return uniqueMessages.reduce(
-    (acc, message) => {
-      const { id } = message.operation
-      const key = message.isIdentity ? "identity" : "item"
-      if (acc[key][id] === undefined) {
-        acc[key][id] = []
-      }
-      acc[key][id].push(message)
-      return acc
-    },
-    { identity: {}, item: {} } as ValidatedMessagesRecord
-  )
+  const groupedMessages = new Map<Id, ValidatedMessages>()
+
+  for (const message of uniqueMessages) {
+    const { id } = message.operation
+    const messagesForId = groupedMessages.get(id) ?? []
+    messagesForId.push(message)
+    groupedMessages.set(id, messagesForId)
+  }
+
+  return groupedMessages
 }
 
 // parse
@@ -71,12 +90,12 @@ export const validateMessage = async (incomingMessage: Message): Promise<Validat
   if (isVerified === false) {
     error = new Error("Operation verification failed")
   }
-  const isIdentity = isNameKey(operation.id) && (await isSignedByOwner(incomingMessage))
-  if (isIdentity === false && isIdentityOperation(operation)) {
+  const isOwnerSigned = isNameKey(operation.id) && (await isSignedByOwner(incomingMessage))
+  if (isOwnerSigned === false && isIdentityOperation(operation)) {
     error = new Error("Operation is only allowed for Identity")
   }
   const isValid = error === undefined
-  return { ...incomingMessage, operation, isIdentity, isValid, error }
+  return { ...incomingMessage, operation, isOwnerSigned, isValid, error }
 }
 
 export const validateMessages = async (incomingMessages: Messages): Promise<ValidatedMessages> => {

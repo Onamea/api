@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: false
+  workerd: false
+minimumReleaseAgeExclude:
+  - '@jsr/onamea__crdt@0.6.5'

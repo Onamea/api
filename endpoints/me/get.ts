@@ -1,13 +1,12 @@
-import type { RouterContext } from "@oak/oak/router"
-import ROUTES from "../ROUTES.ts"
+import type { Context } from "hono"
+import type { AppEnv } from "../../lib/env.ts"
+import routes from "../routes.ts"
 import getMe from "../../lib/getMe.ts"
 
-export default (ctx: RouterContext<typeof ROUTES.GET_ME>) => {
+export default (ctx: Context<AppEnv, typeof routes.GET_ME>) => {
   const me = getMe()
   if (me !== undefined) {
-    ctx.response.body = me
-  } else {
-    ctx.response.status = 404
-    ctx.response.body = { error: "No Me data configured" }
+    return ctx.json(me)
   }
+  return ctx.json({ error: "No Me data configured" }, 404)
 }

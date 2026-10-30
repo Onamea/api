@@ -1,63 +1,99 @@
 import { test } from "node:test"
-import { spawn, type ChildProcess } from "node:child_process"
 import assert from "node:assert/strict"
 import { keyPairFromPrivateKey } from "@onamea/types"
-import { createCreateOperation, signMessage, toRawOperation } from "@onamea/crdt"
+import {
+  createCreateOperation,
+  createSetOperation,
+  signMessage,
+  toRawOperation,
+  isCreateIdentityMessage
+} from "@onamea/crdt"
+import app from "../app.ts"
+import type { WorkersKVNamespace } from "../lib/db/workersKv.ts"
+import type { OperationStoreNamespace, StoredOperationMessage } from "../lib/db/operationStore.ts"
 import { cryptoName, privateKey } from "./data.mock.ts"
 
-const BASE_URL = "http://localhost:8000"
+const operationStores = new WeakMap<WorkersKVNamespace, OperationStoreNamespace>()
 
-let serverProcess: ChildProcess | undefined
-
-async function startServer() {
-  serverProcess = spawn("node", ["server.ts"], { stdio: ["ignore", "pipe", "pipe"] })
-  let output = ""
-  serverProcess.stdout?.on("data", chunk => (output += chunk))
-  serverProcess.stderr?.on("data", chunk => (output += chunk))
-  // Poll until server responds or timeout after 2 seconds
-  const maxAttempts = 20
-  for (let i = 0; i < maxAttempts; i++) {
-    try {
-      const response = await fetch(`${BASE_URL}/me`)
-      if (response.ok || response.status === 404) {
-        await response.body?.cancel()
-        return
-      }
-      await response.body?.cancel()
-    } catch {
-      // ignore errors
+const createMemoryOperationStore = (): OperationStoreNamespace => {
+  const names = new WeakMap<object, string>()
+  const entities = new Map<string, StoredOperationMessage[]>()
+  const hasOwnerSignedCreate = async (records: StoredOperationMessage[]) => {
+    for (const { message } of records) {
+      if (await isCreateIdentityMessage(message)) return true
     }
-    await new Promise(resolve => setTimeout(resolve, 100))
+    return false
   }
-  // Print server output for debugging
-  console.error(output)
-  await stopServer()
-  throw new Error("Server did not start in time")
+  return {
+    idFromName: name => {
+      const id = {}
+      names.set(id, name)
+      return id
+    },
+    get: id => ({
+      fetch: async (input, init) => {
+        const request = new Request(input, init)
+        const incoming = (await request.json()) as StoredOperationMessage[]
+        const entityId = names.get(id as object)!
+        const existing = entities.get(entityId) ?? []
+        const wasIdentity = await hasOwnerSignedCreate(existing)
+        const existingMessageKeys = new Set(
+          existing.map(({ operation, message }) =>
+            JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+          )
+        )
+        const added = incoming.filter(({ operation, message }) => {
+          const key = JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+          if (existingMessageKeys.has(key)) return false
+          existingMessageKeys.add(key)
+          return true
+        })
+        const records = [...existing, ...added]
+        entities.set(entityId, records)
+        const isIdentity = await hasOwnerSignedCreate(records)
+        return Response.json({ records, added, isIdentity, becameIdentity: isIdentity && !wasIdentity })
+      }
+    })
+  }
 }
 
-async function stopServer() {
-  if (serverProcess) {
-    const exited = new Promise(resolve => serverProcess?.once("exit", resolve))
-    serverProcess.stdout?.destroy()
-    serverProcess.stderr?.destroy()
-    serverProcess.kill("SIGTERM")
-    await exited
-    serverProcess = undefined
+const createMemoryKv = (): WorkersKVNamespace => {
+  const entries = new Map<string, string>()
+  const kv: WorkersKVNamespace = {
+    get: async (key, type) => {
+      const value = entries.get(key)
+      return value === undefined ? null : type === "json" ? JSON.parse(value) : value
+    },
+    put: async (key, value) => {
+      entries.set(key, value)
+    },
+    list: async ({ prefix, limit, cursor }) => {
+      const keys = [...entries.keys()].filter(key => key.startsWith(prefix)).sort()
+      const start = cursor === undefined ? 0 : Number(cursor)
+      const pageKeys = keys.slice(start, start + limit)
+      const next = start + pageKeys.length
+      return {
+        keys: pageKeys.map(name => ({ name })),
+        list_complete: next >= keys.length,
+        ...(next < keys.length ? { cursor: String(next) } : {})
+      }
+    }
   }
+  operationStores.set(kv, createMemoryOperationStore())
+  return kv
 }
 
-// TODO: port Deno.kv
-async function clearDenoKV() {}
+const request = (kv: WorkersKVNamespace, path: string, init?: RequestInit) =>
+  app.request(path, init, { ONAMEA_KV: kv, OPERATION_STORE: operationStores.get(kv)! })
 
 test("POST / single operation", async () => {
-  await startServer()
-  await clearDenoKV()
+  const kv = createMemoryKv()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
   const operation = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
   const message = await signMessage({ raw: toRawOperation(operation) }, keyPair)
 
-  const response = await fetch(`${BASE_URL}/`, {
+  const response = await request(kv, "/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message)
@@ -71,12 +107,13 @@ test("POST / single operation", async () => {
   assert.equal(body[0].operations[0].type, "CREATE")
   assert.equal(body[0].operations.length, 1)
 
-  await stopServer()
+  const identityResponse = await request(kv, "/identities/id/Vani%4046G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
+  assert.equal(identityResponse.status, 200)
+  assert.equal(((await identityResponse.json()) as { id: string }).id, body[0].id)
 })
 
 test("POST / two operations", async () => {
-  await startServer()
-  await clearDenoKV()
+  const kv = createMemoryKv()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
   const createOperation = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
@@ -95,7 +132,7 @@ line2
     )
   ]
 
-  const response = await fetch(`${BASE_URL}/`, {
+  const response = await request(kv, "/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(messages)
@@ -109,13 +146,10 @@ line2
   assert.equal(body[0].operations[0].type, "CREATE")
   assert.equal(body[0].operations[1].type, "SET")
   assert.equal(body[0].body, "body\nline2\n")
-
-  await stopServer()
 })
 
 test("POST / two CREATE operations", async () => {
-  await startServer()
-  await clearDenoKV()
+  const kv = createMemoryKv()
 
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
   const createOperation1 = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
@@ -125,7 +159,7 @@ test("POST / two CREATE operations", async () => {
     await signMessage({ raw: toRawOperation(createOperation2) }, keyPair)
   ]
 
-  const response = await fetch(`${BASE_URL}/`, {
+  const response = await request(kv, "/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(messages)
@@ -137,5 +171,150 @@ test("POST / two CREATE operations", async () => {
   assert.equal(body[0].id, "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
   assert.equal(body[1].id, "Item-1")
 
-  await stopServer()
+  const itemResponse = await request(kv, "/items/id/Item-1")
+  assert.equal(itemResponse.status, 200)
+  assert.equal(((await itemResponse.json()) as { id: string }).id, "Item-1")
+})
+
+test("POST / accepts IDs matching object prototype properties", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const messages = await Promise.all(
+    ["constructor", "__proto__"].map(async id => {
+      const operation = await createCreateOperation(id)
+      return await signMessage({ raw: toRawOperation(operation) }, keyPair)
+    })
+  )
+
+  const response = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  })
+  assert.equal(response.status, 200)
+  const body = (await response.json()) as { id: string }[]
+  assert.deepEqual(
+    body.map(({ id }) => id),
+    ["constructor", "__proto__"]
+  )
+})
+
+test("POST / concurrent operations preserve all messages", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const createOperation = await createCreateOperation("Item-concurrent")
+  const createMessage = await signMessage({ raw: toRawOperation(createOperation) }, keyPair)
+
+  const createResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(createMessage)
+  })
+  assert.equal(createResponse.status, 200)
+
+  const createSetMessage = async (value: string) =>
+    await signMessage({ raw: `Item-concurrent\n${createOperation.hash}\nSET\n${value}\n` }, keyPair)
+  const messages = await Promise.all([createSetMessage("left"), createSetMessage("right")])
+
+  const responses = await Promise.all(
+    messages.map(message =>
+      request(kv, "/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(message)
+      })
+    )
+  )
+  assert.deepEqual(
+    responses.map(({ status }) => status),
+    [200, 200]
+  )
+
+  const itemResponse = await request(kv, "/items/id/Item-concurrent")
+  assert.equal(itemResponse.status, 200)
+  const item = (await itemResponse.json()) as { operations: unknown[]; messages: unknown[] }
+  assert.equal(item.operations.length, 3)
+  assert.equal(item.messages.length, 3)
+})
+
+test("POST / preserves distinct messages for the same operation", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const otherKeyPair = keyPairFromPrivateKey(
+    cryptoName,
+    "0000000000000000000000000000000000000000000000000000000000000001"
+  )
+  const createOperation = await createCreateOperation("Item-multisigned")
+  const createMessage = await signMessage({ raw: toRawOperation(createOperation) }, keyPair)
+
+  const createResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(createMessage)
+  })
+  assert.equal(createResponse.status, 200)
+
+  const setOperation = await createSetOperation("Item-multisigned", createOperation.hash, "shared operation")
+  const rawOperation = toRawOperation(setOperation)
+  const messages = await Promise.all([
+    signMessage({ raw: rawOperation }, keyPair),
+    signMessage({ raw: rawOperation }, otherKeyPair)
+  ])
+  for (const message of messages) {
+    const response = await request(kv, "/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message)
+    })
+    assert.equal(response.status, 200)
+  }
+
+  const itemResponse = await request(kv, "/items/id/Item-multisigned")
+  assert.equal(itemResponse.status, 200)
+  const item = (await itemResponse.json()) as {
+    operations: { hash: string }[]
+    messages: { publicKey: string }[]
+  }
+  assert.equal(item.operations.length, 2)
+  assert.equal(item.operations.filter(({ hash }) => hash === setOperation.hash).length, 1)
+  assert.equal(item.messages.length, 3)
+  assert.equal(new Set(item.messages.map(({ publicKey }) => publicKey)).size, 2)
+})
+
+test("POST / classifies a shared NameKey CREATE as an Identity", async () => {
+  const kv = createMemoryKv()
+  const ownerKeyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const otherKeyPair = keyPairFromPrivateKey(
+    cryptoName,
+    "0000000000000000000000000000000000000000000000000000000000000001"
+  )
+  const id = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
+  const createOperation = await createCreateOperation(id)
+  const messages = await Promise.all([
+    signMessage({ raw: toRawOperation(createOperation) }, otherKeyPair),
+    signMessage({ raw: toRawOperation(createOperation) }, ownerKeyPair)
+  ])
+
+  const response = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  })
+  assert.equal(response.status, 200)
+  const body = (await response.json()) as {
+    id: string
+    displayName: string
+    operations: unknown[]
+    messages: unknown[]
+  }[]
+  assert.equal(body.length, 1)
+  assert.equal(body[0].id, id)
+  assert.notEqual(body[0].displayName, id)
+  assert.equal(body[0].operations.length, 1)
+  assert.equal(body[0].messages.length, 2)
+
+  const identityResponse = await request(kv, `/identities/id/${encodeURIComponent(id)}`)
+  assert.equal(identityResponse.status, 200)
+  const identity = (await identityResponse.json()) as { messages: unknown[] }
+  assert.equal(identity.messages.length, 2)
 })

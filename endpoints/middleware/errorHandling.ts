@@ -1,10 +1,8 @@
-import type { Context } from "@oak/oak/context"
+import type { ErrorHandler } from "hono"
+import type { AppEnv } from "../../lib/env.ts"
 
-export default async (ctx: Context, next: () => Promise<unknown>) => {
-  try {
-    await next()
-  } catch (error) {
-    ctx.response.status = 500
-    ctx.response.body = { error }
-  }
+const errorHandling: ErrorHandler<AppEnv> = (error, ctx) => {
+  return ctx.json({ error: error instanceof Error ? error.message : String(error) }, 500)
 }
+
+export default errorHandling
