@@ -1,27 +1,28 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "onamea-api",
-  "main": "app.ts",
-  "compatibility_date": "2026-10-26",
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "OPERATION_STORE",
-        "class_name": "OperationStore"
-      }
-    ]
-  },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["OperationStore"]
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "ONAMEA_KV",
-      // Replace with the ID from `pnpm exec wrangler kv namespace create ONAMEA_KV`.
-      "id": "00000000000000000000000000000000"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "onamea-api",
+	"main": "app.ts",
+	"compatibility_date": "2026-10-26",
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "OPERATION_STORE",
+				"class_name": "OperationStore"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"OperationStore"
+			]
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "ONAMEA_KV",
+			"id": "203d5ddf319e411d9796042ac6d64210"
+		}
+	]
 }
