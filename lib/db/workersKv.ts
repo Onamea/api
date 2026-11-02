@@ -24,6 +24,8 @@ export type IdentityWithMessages = Identity & { messages: Messages }
 
 export type ItemWithMessages = Item & { messages: Messages }
 
+export type SearchResult = (IdentityWithMessages & { type: "identity" }) | (ItemWithMessages & { type: "item" })
+
 const IDENTITY_PREFIX = "identities/"
 const ENTITY_PREFIX = "entities/"
 const PAGE_SIZE = 1000
@@ -104,6 +106,46 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
       }
     }
     return matching
+  },
+
+  search: async (term: string): Promise<SearchResult[]> => {
+    const normalizedTerm = term.toLowerCase()
+    const identities = await buildIdentities(await listValues<StoredOperationMessage>(kv, IDENTITY_PREFIX))
+    const identityIds = new Set<string>(identities.map(({ id }) => id))
+    const records = await listValues<StoredOperationMessage>(kv, ENTITY_PREFIX)
+    const grouped = new Map<Id, StoredOperationMessage[]>()
+    for (const record of records) {
+      const entityRecords = grouped.get(record.operation.id) ?? []
+      entityRecords.push(record)
+      grouped.set(record.operation.id, entityRecords)
+    }
+
+    const matchingIdentities = identities
+      .filter(
+        ({ id, body }) =>
+          id.toLowerCase().includes(normalizedTerm) || body?.toLowerCase().includes(normalizedTerm) === true
+      )
+      .map(identity => ({ ...identity, type: "identity" as const }))
+
+    const matchingItems = await Promise.all(
+      [...grouped]
+        .filter(([id]) => !identityIds.has(id) && isId(id))
+        .map(async ([id, entityRecords]) => {
+          const item = {
+            ...(await buildItemFromOperations(
+              entityRecords.map(({ operation }) => operation),
+              id
+            )),
+            messages: entityRecords.map(({ message }) => message)
+          }
+          return item.id.toLowerCase().includes(normalizedTerm) ||
+            item.body?.toLowerCase().includes(normalizedTerm) === true
+            ? { ...item, type: "item" as const }
+            : undefined
+        })
+    )
+
+    return [...matchingIdentities, ...matchingItems.filter(item => item !== undefined)]
   },
 
   appendIdentityMessages: async (id: NameKey, records: StoredOperationMessage[]): Promise<void> => {

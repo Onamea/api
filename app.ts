@@ -11,6 +11,7 @@ import getByName from "./endpoints/identitites/getByName.ts"
 import getMe from "./endpoints/me/get.ts"
 import post from "./endpoints/operations/post.ts"
 import getItemById from "./endpoints/items/getById.ts"
+import search from "./endpoints/search.ts"
 
 const app = new Hono<AppEnv>()
 
@@ -33,6 +34,9 @@ app.get(routes.GET_IDENTITIES_BY_NAME, getByName)
 
 // GET /items/{id}
 app.get(routes.GET_ITEMS_BY_ID, getItemById)
+
+// GET /search/{term}
+app.get(routes.GET_SEARCH, search)
 
 // GET /me
 app.get(routes.GET_ME, getMe)

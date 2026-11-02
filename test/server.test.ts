@@ -318,3 +318,52 @@ test("POST / classifies a shared NameKey CREATE as an Identity", async () => {
   const identity = (await identityResponse.json()) as { messages: unknown[] }
   assert.equal(identity.messages.length, 2)
 })
+
+test("GET /search/:term finds Items and Identities by id or body", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const identityId = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
+  const itemId = "Item-search-result"
+  const identityCreate = await createCreateOperation(identityId)
+  const itemCreate = await createCreateOperation(itemId)
+  const messages = await Promise.all(
+    [
+      toRawOperation(identityCreate),
+      `${identityId}\n${identityCreate.hash}\nSET\nbody\nShared Search Marker\n`,
+      toRawOperation(itemCreate),
+      `${itemId}\n${itemCreate.hash}\nSET\nbody\nShared Search Marker\n`
+    ].map(raw => signMessage({ raw }, keyPair))
+  )
+
+  const createResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  })
+  assert.equal(createResponse.status, 200)
+
+  const bodyResponse = await request(kv, "/search/search")
+  assert.equal(bodyResponse.status, 200)
+  const bodyMatches = (await bodyResponse.json()) as { id: string; type: string }[]
+  assert.deepEqual(
+    bodyMatches.map(({ type }) => type),
+    ["identity", "item"]
+  )
+
+  const itemIdResponse = await request(kv, `/search/${encodeURIComponent(itemId.toUpperCase())}`)
+  const itemIdMatches = (await itemIdResponse.json()) as { id: string; type: string }[]
+  assert.deepEqual(
+    itemIdMatches.map(({ id, type }) => ({ id, type })),
+    [{ id: itemId, type: "item" }]
+  )
+
+  const identityIdResponse = await request(kv, `/search/${encodeURIComponent(identityId)}`)
+  const identityIdMatches = (await identityIdResponse.json()) as { id: string; type: string }[]
+  assert.deepEqual(
+    identityIdMatches.map(({ id, type }) => ({ id, type })),
+    [{ id: identityId, type: "identity" }]
+  )
+
+  const noMatchesResponse = await request(kv, "/search/no-such-entity")
+  assert.deepEqual(await noMatchesResponse.json(), [])
+})
