@@ -24,7 +24,7 @@ export type IdentityWithMessages = Identity & { messages: Messages }
 
 export type ItemWithMessages = Item & { messages: Messages }
 
-export type SearchResult = (IdentityWithMessages & { type: "identity" }) | (ItemWithMessages & { type: "item" })
+export type SearchResult = IdentityWithMessages | ItemWithMessages
 
 const IDENTITY_PREFIX = "identities/"
 const ENTITY_PREFIX = "entities/"
@@ -125,7 +125,6 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
         ({ id, body }) =>
           id.toLowerCase().includes(normalizedTerm) || body?.toLowerCase().includes(normalizedTerm) === true
       )
-      .map(identity => ({ ...identity, type: "identity" as const }))
 
     const matchingItems = await Promise.all(
       [...grouped]
@@ -140,7 +139,7 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
           }
           return item.id.toLowerCase().includes(normalizedTerm) ||
             item.body?.toLowerCase().includes(normalizedTerm) === true
-            ? { ...item, type: "item" as const }
+            ? item
             : undefined
         })
     )

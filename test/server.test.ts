@@ -344,24 +344,25 @@ test("GET /search/:term finds Items and Identities by id or body", async () => {
 
   const bodyResponse = await request(kv, "/search/search")
   assert.equal(bodyResponse.status, 200)
-  const bodyMatches = (await bodyResponse.json()) as { id: string; type: string }[]
+  const bodyMatches = (await bodyResponse.json()) as { id: string }[]
   assert.deepEqual(
-    bodyMatches.map(({ type }) => type),
-    ["identity", "item"]
+    bodyMatches.map(({ id }) => id),
+    [identityId, itemId]
   )
+  assert.ok(bodyMatches.every(match => !("type" in match)))
 
   const itemIdResponse = await request(kv, `/search/${encodeURIComponent(itemId.toUpperCase())}`)
-  const itemIdMatches = (await itemIdResponse.json()) as { id: string; type: string }[]
+  const itemIdMatches = (await itemIdResponse.json()) as { id: string }[]
   assert.deepEqual(
-    itemIdMatches.map(({ id, type }) => ({ id, type })),
-    [{ id: itemId, type: "item" }]
+    itemIdMatches.map(({ id }) => id),
+    [itemId]
   )
 
   const identityIdResponse = await request(kv, `/search/${encodeURIComponent(identityId)}`)
-  const identityIdMatches = (await identityIdResponse.json()) as { id: string; type: string }[]
+  const identityIdMatches = (await identityIdResponse.json()) as { id: string }[]
   assert.deepEqual(
-    identityIdMatches.map(({ id, type }) => ({ id, type })),
-    [{ id: identityId, type: "identity" }]
+    identityIdMatches.map(({ id }) => id),
+    [identityId]
   )
 
   const noMatchesResponse = await request(kv, "/search/no-such-entity")
