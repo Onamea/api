@@ -167,11 +167,11 @@ importers:
   .:
     dependencies:
       '@onamea/crdt':
-        specifier: jsr:0.6.5
-        version: '@jsr/onamea__crdt@0.6.5'
+        specifier: ^0.6.5
+        version: 0.6.5
       '@onamea/types':
-        specifier: jsr:^0.5.3
-        version: '@jsr/onamea__types@0.5.3'
+        specifier: ^0.5.3
+        version: 0.5.3
       hono:
         specifier: ^4.13.13
         version: 4.13.13
@@ -575,35 +575,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@jsr/noble__curves@2.4.0':
-    resolution: {integrity: sha512-rxF+29V5mm14simq4QwkTfHFf+GAHGBPtQIGNYbHLItG3tyif0HzZXaki40ATvUnX4CYv0z2EfPn56g99xr9QQ==, tarball: https://npm.jsr.io/~/11/@jsr/noble__curves/2.4.0.tgz}
+  '@onamea/crdt@0.6.5':
+    resolution: {integrity: sha512-Jj3g059Hcs1XzW1VeaLqhUmTuHHFVq66gOyTeVUBxGxshQBuET8i0vQZOeFyMSgraEChcZ7uaGyjuZoYeJJ95A==}
 
-  '@jsr/noble__ed25519@3.2.0':
-    resolution: {integrity: sha512-/d5RjUozVQ5A9VFSofOB2C7j7N3olNhF4maWlvTdUVpqxS8fKJ2a8h+TNfRKnlXUDWR+8tTn1BplYDrL2Ds0VA==, tarball: https://npm.jsr.io/~/11/@jsr/noble__ed25519/3.2.0.tgz}
-
-  '@jsr/noble__hashes@2.3.0':
-    resolution: {integrity: sha512-DZRVZ6XgSTYVaD17t4SYqhVGnVklfD/ItfTeJYWA4m4aeUCE/w0K/MxSqUUhU0ygpr135xaUPI3/k35SWV7WQA==, tarball: https://npm.jsr.io/~/11/@jsr/noble__hashes/2.3.0.tgz}
-
-  '@jsr/noble__hashes@2.4.0':
-    resolution: {integrity: sha512-x4m413gT9zB3jpSb2V+seFQJkUGzTFn9MLjrQ3HKMGbVeQKFAExgs6DNeoeqSgS9iYTmodiLzIhEDeKG3HMe/A==, tarball: https://npm.jsr.io/~/11/@jsr/noble__hashes/2.4.0.tgz}
-
-  '@jsr/noble__secp256k1@3.1.0':
-    resolution: {integrity: sha512-cW0KkKdMtCdLwn9V66bDThsDYG36H2zwjJDR2+RTXfNeQUT4AqKrFdJ5L8PfWkDd8jaqGpxewu4Pw4GPJ/pOnw==, tarball: https://npm.jsr.io/~/11/@jsr/noble__secp256k1/3.1.0.tgz}
-
-  '@jsr/onamea__crdt@0.6.5':
-    resolution: {integrity: sha512-Yxl9Ybl6WkeqBzuKeU9sSKQiYRpGnR90TJTcVAhzFCua2zQPK9y2wF82+kcXfb3Knp+FckYZvS+Q7B/xMjzWHg==, tarball: https://npm.jsr.io/~/11/@jsr/onamea__crdt/0.6.5.tgz}
-
-  '@jsr/onamea__types@0.5.3':
-    resolution: {integrity: sha512-KFn7L2GDjGcQXDP97QkMZozbA7NxyKOrc7ILMlaIY2CtmFJ6mdTv2q3l19hFOo1EbtjAHABJ7jAopquk8X/qGw==, tarball: https://npm.jsr.io/~/11/@jsr/onamea__types/0.5.3.tgz}
-
-  '@jsr/scure__base@2.4.0':
-    resolution: {integrity: sha512-k+lKR6/gajWifzSj7DuwJI9So6dkV9chKH9TSH1tdWGR9BbfDTzOfY899VdR5n9ybA4hGOKfnX2sGqi/w5Oe9Q==, tarball: https://npm.jsr.io/~/11/@jsr/scure__base/2.4.0.tgz}
-
-  '@jsr/scure__bip32@2.4.0':
-    resolution: {integrity: sha512-wJtG9S8fJtNGuR7OAfmdNJxfDePjeJFEJd+oQz6OBTDWKQrkMh2ZVOthwfOYMm71o1oTZJwfSW9ZNcD2skMyCQ==, tarball: https://npm.jsr.io/~/11/@jsr/scure__bip32/2.4.0.tgz}
-
-  '@jsr/scure__bip39@2.4.0':
-    resolution: {integrity: sha512-38SsA6qPv5jLms/0z5z6hl92xX94JzI1xfx/CF0gU4NWfx7BgEGjAqlHnUMYEZ2NFl9rju2u9cDVhX1js2pqCQ==, tarball: https://npm.jsr.io/~/11/@jsr/scure__bip39/2.4.0.tgz}
+  '@onamea/types@0.5.3':
+    resolution: {integrity: sha512-17u2pFcq59mp+l9HvoyiRwyidCvwKZuotURv3n6P52SJ8N3HD9Nk4xWnF6T1EVRMVAEASEovyB6stT7eppNCOQ==}
 
   '@oxfmt/binding-android-arm-eabi@0.73.0':
     resolution: {integrity: sha512-dhunAdMbi/4o0Y66/+Wl6rpsNqpvE4i26Qw6bB77A97L2lJoktWg6m+X9QOon8iOEEqzD9rEZqFi5uZ4oIzhCA==}
@@ -1361,42 +1337,11 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@jsr/noble__curves@2.4.0':
-    dependencies:
-      '@jsr/noble__hashes': 2.4.0
-
-  '@jsr/noble__ed25519@3.2.0': {}
-
-  '@jsr/noble__hashes@2.3.0': {}
-
-  '@jsr/noble__hashes@2.4.0': {}
-
-  '@jsr/noble__secp256k1@3.1.0': {}
-
-  '@jsr/onamea__crdt@0.6.5':
+  '@onamea/crdt@0.6.5':
     dependencies:
       '@cfworker/json-schema': 4.1.1
-      '@jsr/onamea__types': 0.5.3
 
-  '@jsr/onamea__types@0.5.3':
-    dependencies:
-      '@jsr/noble__ed25519': 3.2.0
-      '@jsr/noble__hashes': 2.3.0
-      '@jsr/noble__secp256k1': 3.1.0
-      '@jsr/scure__bip32': 2.4.0
-      '@jsr/scure__bip39': 2.4.0
-
-  '@jsr/scure__base@2.4.0': {}
-
-  '@jsr/scure__bip32@2.4.0':
-    dependencies:
-      '@jsr/noble__curves': 2.4.0
-      '@jsr/noble__hashes': 2.4.0
-      '@jsr/scure__base': 2.4.0
-
-  '@jsr/scure__bip39@2.4.0':
-    dependencies:
-      '@jsr/noble__hashes': 2.4.0
+  '@onamea/types@0.5.3': {}
 
   '@oxfmt/binding-android-arm-eabi@0.73.0':
     optional: true
