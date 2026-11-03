@@ -1,11 +1,6 @@
+import { createHash } from "node:crypto"
 import type { FingerprintDisplay, Name, NameKey } from "@onamea/types"
-import {
-  fingerprintDisplayStartsWith,
-  isNameKey,
-  messageToHash,
-  nameKeyToFingerprintDisplay,
-  parseNameKey
-} from "@onamea/types"
+import { fingerprintDisplayStartsWith, isNameKey, nameKeyToFingerprintDisplay, parseNameKey } from "@onamea/types"
 import type { Id, IdentityWithMessages, ItemWithMessages } from "@onamea/crdt"
 import { buildIdentityFromOperations, buildItemFromOperations, isId } from "@onamea/crdt"
 import type { KVNamespace } from "@cloudflare/workers-types"
@@ -19,13 +14,14 @@ const IDENTITY_PREFIX = "identities/"
 const ENTITY_PREFIX = "entities/"
 const PAGE_SIZE = 1000
 
-const identityPrefix = async (name: Name, id: NameKey): Promise<string> =>
-  `${IDENTITY_PREFIX}${await messageToHash(name)}/${await messageToHash(id)}/`
+const hash = (value: string): string => createHash("sha256").update(value, "utf8").digest("hex")
 
-const entityPrefix = async (id: Id): Promise<string> => `${ENTITY_PREFIX}${await messageToHash(id)}/`
+const identityPrefix = (name: Name, id: NameKey): string => `${IDENTITY_PREFIX}${hash(name)}/${hash(id)}/`
 
-const messageKey = async ({ operation, message }: StoredOperationMessage): Promise<string> =>
-  await messageToHash(JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature]))
+const entityPrefix = (id: Id): string => `${ENTITY_PREFIX}${hash(id)}/`
+
+const messageKey = ({ operation, message }: StoredOperationMessage): string =>
+  hash(JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature]))
 
 const listValues = async <T>(kv: WorkersKVNamespace, prefix: string): Promise<T[]> => {
   const values: T[] = []
@@ -74,7 +70,7 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
 
   getIdentityById: async (id: NameKey): Promise<IdentityWithMessages | undefined> => {
     const [, name] = parseNameKey(id)
-    const records = await listValues<StoredOperationMessage>(kv, await identityPrefix(name, id))
+    const records = await listValues<StoredOperationMessage>(kv, identityPrefix(name, id))
     return (await buildIdentities(records))[0]
   },
 
@@ -83,7 +79,7 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
     fingerprintDisplaySuffix?: FingerprintDisplay
   ): Promise<IdentityWithMessages[]> => {
     const identities = await buildIdentities(
-      await listValues<StoredOperationMessage>(kv, `${IDENTITY_PREFIX}${await messageToHash(name)}/`)
+      await listValues<StoredOperationMessage>(kv, `${IDENTITY_PREFIX}${hash(name)}/`)
     )
     if (fingerprintDisplaySuffix === undefined) return identities
 
@@ -139,7 +135,7 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
     if (isId(id) === false) {
       throw new Error("Invalid Id")
     }
-    const records = await listValues<StoredOperationMessage>(kv, await entityPrefix(id))
+    const records = await listValues<StoredOperationMessage>(kv, entityPrefix(id))
     if (records.length === 0) return undefined
     return {
       ...(await buildItemFromOperations(
@@ -155,21 +151,19 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
     records: StoredOperationMessage[],
     identityRecords: StoredOperationMessage[] = []
   ): Promise<void> => {
-    const entityRecordsPrefix = await entityPrefix(id)
+    const entityRecordsPrefix = entityPrefix(id)
     let identityRecordsPrefix: string | undefined
     if (identityRecords.length > 0 && isNameKey(id)) {
       const [, name] = parseNameKey(id)
-      identityRecordsPrefix = await identityPrefix(name, id)
+      identityRecordsPrefix = identityPrefix(name, id)
     }
 
-    const writes = records.map(
-      async record => await kv.put(`${entityRecordsPrefix}${await messageKey(record)}`, JSON.stringify(record))
-    )
+    const writes = records.map(record => kv.put(`${entityRecordsPrefix}${messageKey(record)}`, JSON.stringify(record)))
 
     if (identityRecordsPrefix !== undefined) {
       writes.push(
-        ...identityRecords.map(
-          async record => await kv.put(`${identityRecordsPrefix}${await messageKey(record)}`, JSON.stringify(record))
+        ...identityRecords.map(record =>
+          kv.put(`${identityRecordsPrefix}${messageKey(record)}`, JSON.stringify(record))
         )
       )
     }

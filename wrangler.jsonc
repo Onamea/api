@@ -3,6 +3,7 @@
   "name": "onamea-api",
   "main": "app.ts",
   "compatibility_date": "2026-10-26",
+  "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
     "bindings": [
       {
