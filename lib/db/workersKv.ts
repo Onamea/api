@@ -6,7 +6,7 @@ import {
   nameKeyToFingerprintDisplay,
   parseNameKey
 } from "@onamea/types"
-import type { Id, Identity, Item, Messages } from "@onamea/crdt"
+import type { Id, IdentityWithMessages, ItemWithMessages } from "@onamea/crdt"
 import { buildIdentityFromOperations, buildItemFromOperations, isId } from "@onamea/crdt"
 import type { StoredOperationMessage } from "./operationStore.ts"
 
@@ -19,10 +19,6 @@ export interface WorkersKVNamespace {
     cursor?: string
   }>
 }
-
-export type IdentityWithMessages = Identity & { messages: Messages }
-
-export type ItemWithMessages = Item & { messages: Messages }
 
 export type SearchResult = IdentityWithMessages | ItemWithMessages
 
