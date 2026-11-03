@@ -135,14 +135,6 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
     return [...matchingIdentities, ...matchingItems.filter(item => item !== undefined)]
   },
 
-  appendIdentityMessages: async (id: NameKey, records: StoredOperationMessage[]): Promise<void> => {
-    const [, name] = parseNameKey(id)
-    const prefix = await identityPrefix(name, id)
-    await Promise.all(
-      records.map(async record => await kv.put(`${prefix}${await messageKey(record)}`, JSON.stringify(record)))
-    )
-  },
-
   getItemById: async (id: Id): Promise<ItemWithMessages | undefined> => {
     if (isId(id) === false) {
       throw new Error("Invalid Id")
