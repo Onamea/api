@@ -319,6 +319,42 @@ test("POST / classifies a shared NameKey CREATE as an Identity", async () => {
   assert.equal(identity.messages.length, 2)
 })
 
+test("POST / reports and retries a failed identity projection", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const id = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
+  const operation = await createCreateOperation(id)
+  const message = await signMessage({ raw: toRawOperation(operation) }, keyPair)
+  const originalPut = kv.put.bind(kv)
+
+  kv.put = async () => {
+    throw new Error("KV unavailable")
+  }
+  const failedResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message)
+  })
+  kv.put = originalPut
+
+  assert.equal(failedResponse.status, 500)
+
+  const retryResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message)
+  })
+  assert.equal(retryResponse.status, 200)
+
+  const identitiesResponse = await request(kv, "/identities")
+  assert.equal(identitiesResponse.status, 200)
+  const identities = (await identitiesResponse.json()) as { id: string }[]
+  assert.deepEqual(
+    identities.map(({ id }) => id),
+    [id]
+  )
+})
+
 test("GET /search/:term finds Items and Identities by id or body", async () => {
   const kv = createMemoryKv()
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)

@@ -120,11 +120,10 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
       grouped.set(record.operation.id, entityRecords)
     }
 
-    const matchingIdentities = identities
-      .filter(
-        ({ id, body }) =>
-          id.toLowerCase().includes(normalizedTerm) || body?.toLowerCase().includes(normalizedTerm) === true
-      )
+    const matchingIdentities = identities.filter(
+      ({ id, body }) =>
+        id.toLowerCase().includes(normalizedTerm) || body?.toLowerCase().includes(normalizedTerm) === true
+    )
 
     const matchingItems = await Promise.all(
       [...grouped]
@@ -176,13 +175,17 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => ({
     identityRecords: StoredOperationMessage[] = []
   ): Promise<void> => {
     const entityRecordsPrefix = await entityPrefix(id)
+    let identityRecordsPrefix: string | undefined
+    if (identityRecords.length > 0 && isNameKey(id)) {
+      const [, name] = parseNameKey(id)
+      identityRecordsPrefix = await identityPrefix(name, id)
+    }
+
     const writes = records.map(
       async record => await kv.put(`${entityRecordsPrefix}${await messageKey(record)}`, JSON.stringify(record))
     )
 
-    if (identityRecords.length > 0 && isNameKey(id)) {
-      const [, name] = parseNameKey(id)
-      const identityRecordsPrefix = await identityPrefix(name, id)
+    if (identityRecordsPrefix !== undefined) {
       writes.push(
         ...identityRecords.map(
           async record => await kv.put(`${identityRecordsPrefix}${await messageKey(record)}`, JSON.stringify(record))

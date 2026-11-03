@@ -45,21 +45,19 @@ export default async (ctx: Context<AppEnv, typeof routes.POST>) => {
           },
           isOwnerSigned: validatedMessage.isOwnerSigned
         }))
-        const { records, added, isIdentity, becameIdentity } = await ctx
-          .get("operationStore")
-          .append(id, incomingRecords)
+        const { records, added, isIdentity } = await ctx.get("operationStore").append(id, incomingRecords)
         const newRecords = added.map(record => ({
           operation: record.operation,
           message: record.message,
           isOwnerSigned: record.isOwnerSigned
         }))
 
-        if (newRecords.length > 0) {
+        if (newRecords.length > 0 || isIdentity) {
           try {
-            const identityProjection = isIdentity ? (becameIdentity ? records : newRecords) : []
-            await db.appendEntityMessages(id, newRecords, identityProjection)
+            await db.appendEntityMessages(id, newRecords, isIdentity ? records : [])
           } catch (error) {
             console.error("Failed to project entity messages to KV", error)
+            return ctx.json({ error: error instanceof Error ? error.message : String(error) }, 500)
           }
         }
 
