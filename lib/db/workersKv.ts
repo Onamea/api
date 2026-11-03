@@ -8,17 +8,10 @@ import {
 } from "@onamea/types"
 import type { Id, IdentityWithMessages, ItemWithMessages } from "@onamea/crdt"
 import { buildIdentityFromOperations, buildItemFromOperations, isId } from "@onamea/crdt"
+import type { KVNamespace } from "@cloudflare/workers-types"
 import type { StoredOperationMessage } from "./operationStore.ts"
 
-export interface WorkersKVNamespace {
-  get(key: string, type: "json"): Promise<unknown | null>
-  put(key: string, value: string): Promise<void>
-  list(options: { prefix: string; limit: number; cursor?: string }): Promise<{
-    keys: { name: string }[]
-    list_complete: boolean
-    cursor?: string
-  }>
-}
+export type WorkersKVNamespace = KVNamespace
 
 export type SearchResult = IdentityWithMessages | ItemWithMessages
 

@@ -59,15 +59,15 @@ const createMemoryOperationStore = (): OperationStoreNamespace => {
 
 const createMemoryKv = (): WorkersKVNamespace => {
   const entries = new Map<string, string>()
-  const kv: WorkersKVNamespace = {
-    get: async (key, type) => {
+  const kv = {
+    get: async (key: string, type: "json") => {
       const value = entries.get(key)
       return value === undefined ? null : type === "json" ? JSON.parse(value) : value
     },
-    put: async (key, value) => {
+    put: async (key: string, value: string) => {
       entries.set(key, value)
     },
-    list: async ({ prefix, limit, cursor }) => {
+    list: async ({ prefix, limit, cursor }: { prefix: string; limit: number; cursor?: string }) => {
       const keys = [...entries.keys()].filter(key => key.startsWith(prefix)).sort()
       const start = cursor === undefined ? 0 : Number(cursor)
       const pageKeys = keys.slice(start, start + limit)
@@ -79,8 +79,9 @@ const createMemoryKv = (): WorkersKVNamespace => {
       }
     }
   }
-  operationStores.set(kv, createMemoryOperationStore())
-  return kv
+  const workersKv = kv as WorkersKVNamespace
+  operationStores.set(workersKv, createMemoryOperationStore())
+  return workersKv
 }
 
 const request = (kv: WorkersKVNamespace, path: string, init?: RequestInit) =>
