@@ -1,19 +1,25 @@
 import type { NameKey } from "@onamea/types"
-import { type Identity, buildIdentityFromOperations, isMessage, parseRawOperation } from "@onamea/crdt"
-import message from "../config/me.json" with { type: "json" }
+import { type IdentityWithMessages, type Messages, buildIdentityFromOperations, isMessage, parseRawOperation } from "@onamea/crdt"
+import messages from "../config/me.json" with { type: "json" }
 
-let identity: Identity | undefined
+let identity: IdentityWithMessages | undefined
 
-if (isMessage(message)) {
+const isMessages = (value: unknown): value is Messages =>
+  Array.isArray(value) && value.length > 0 && value.every(isMessage)
+
+if (isMessages(messages)) {
   try {
-    const operations = [await parseRawOperation(message.raw)]
+    const operations = await Promise.all(messages.map(async message => await parseRawOperation(message.raw)))
     const nameKey = operations[0].id
-    identity = await buildIdentityFromOperations(operations, nameKey as NameKey)
+    identity = {
+      ...(await buildIdentityFromOperations(operations, nameKey as NameKey)),
+      messages
+    }
   } catch (error) {
     console.error("Failed to build identity from config/me.json: ", error)
   }
 }
 
-export default (): Identity | undefined => {
+export default (): IdentityWithMessages | undefined => {
   return identity
 }

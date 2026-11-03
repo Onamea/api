@@ -11,6 +11,7 @@ import {
 import app from "../app.ts"
 import type { WorkersKVNamespace } from "../lib/db/workersKv.ts"
 import type { OperationStoreNamespace, StoredOperationMessage } from "../lib/db/operationStore.ts"
+import meMessage from "../config/me.json" with { type: "json" }
 import { cryptoName, privateKey } from "./data.mock.ts"
 
 const operationStores = new WeakMap<WorkersKVNamespace, OperationStoreNamespace>()
@@ -86,6 +87,21 @@ const createMemoryKv = (): WorkersKVNamespace => {
 
 const request = (kv: WorkersKVNamespace, path: string, init?: RequestInit) =>
   app.request(path, init, { ONAMEA_KV: kv, OPERATION_STORE: operationStores.get(kv)! })
+
+test("GET /me includes its messages", async () => {
+  const kv = createMemoryKv()
+  const postResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(meMessage)
+  })
+  assert.equal(postResponse.status, 200)
+
+  const response = await request(kv, "/me")
+  assert.equal(response.status, 200)
+  const body = (await response.json()) as { messages: unknown[] }
+  assert.equal(body.messages.length, 1)
+})
 
 test("POST / single operation", async () => {
   const kv = createMemoryKv()
