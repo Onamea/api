@@ -6,7 +6,7 @@ import { OperationStoreCore, type AppendResult } from "./operationStore.ts"
 
 type OperationStoreContext = ConstructorParameters<typeof DurableObject>[0]
 
-export class OperationStore extends DurableObject<unknown> {
+export class OperationStoreV2 extends DurableObject<unknown> {
   private readonly store: OperationStoreCore
 
   constructor(ctx: OperationStoreContext, env: unknown) {

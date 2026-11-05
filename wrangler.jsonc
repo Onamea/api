@@ -8,7 +8,7 @@
     "bindings": [
       {
         "name": "OPERATION_STORE",
-        "class_name": "OperationStore"
+        "class_name": "OperationStoreV2"
       }
     ]
   },
@@ -16,6 +16,11 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["OperationStore"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["OperationStoreV2"],
+      "deleted_classes": ["OperationStore"]
     }
   ],
   "kv_namespaces": [
