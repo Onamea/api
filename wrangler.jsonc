@@ -19,8 +19,7 @@
     },
     {
       "tag": "v2",
-      "new_sqlite_classes": ["OperationStoreV2"],
-      "deleted_classes": ["OperationStore"]
+      "new_sqlite_classes": ["OperationStoreV2"]
     }
   ],
   "kv_namespaces": [
