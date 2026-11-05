@@ -20,6 +20,10 @@
     {
       "tag": "v2",
       "new_sqlite_classes": ["OperationStoreV2"]
+    },
+    {
+      "tag": "v3",
+      "deleted_classes": ["OperationStore"]
     }
   ],
   "kv_namespaces": [
