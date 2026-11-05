@@ -3,10 +3,12 @@ import { type Identity, type Item, buildIdentityFromOperations, buildItemFromOpe
 import type { Context } from "hono"
 import routes from "../routes.ts"
 import type { AppEnv } from "../../lib/env.ts"
+import { withMessages } from "../../lib/withMessages.ts"
 import {
   areIncomingMessages,
   cleanIncomingMessages,
   groupMessagesById,
+  cleanIncomingMessage,
   validatedMessagesToMessages,
   validateMessages
 } from "../../lib/Operation.ts"
@@ -34,45 +36,26 @@ export default async (ctx: Context<AppEnv, typeof routes.POST>) => {
       const response: (Identity | Item)[] = []
 
       for (const [id, messages] of groupedMessages) {
-        const incomingRecords = messages.map(validatedMessage => ({
-          operation: validatedMessage.operation,
-          message: {
-            raw: validatedMessage.raw,
-            cryptoName: validatedMessage.cryptoName,
-            publicKey: validatedMessage.publicKey,
-            signature: validatedMessage.signature,
-            datetime: validatedMessage.datetime
-          },
-          isOwnerSigned: validatedMessage.isOwnerSigned
-        }))
-        const { records, added, isIdentity } = await ctx.get("operationStore").append(id, incomingRecords)
-        const newRecords = added.map(record => ({
-          operation: record.operation,
-          message: record.message,
-          isOwnerSigned: record.isOwnerSigned
-        }))
+        const { records, isIdentity } = await ctx.get("operationStore").append(id, messages.map(cleanIncomingMessage))
+        const operations = [...new Map(records.map(({ operation }) => [operation.hash, operation])).values()]
 
-        if (newRecords.length > 0 || isIdentity) {
-          try {
-            await db.appendEntityMessages(id, newRecords, isIdentity ? records : [])
-          } catch (error) {
-            console.error("Failed to project entity messages to KV", error)
-            return ctx.json({ error: error instanceof Error ? error.message : String(error) }, 500)
+        try {
+          if (isIdentity) {
+            const entity = await buildIdentityFromOperations(operations, id as NameKey, true)
+            await db.projectEntity(id, { isIdentity: true, entity })
+            response.push(entity)
+          } else {
+            const entity = await buildItemFromOperations(operations, id)
+            await db.projectEntity(id, { isIdentity: false, entity })
+            response.push(entity)
           }
+        } catch (error) {
+          console.error("Failed to project entity to KV", error)
+          return ctx.json({ error: error instanceof Error ? error.message : String(error) }, 500)
         }
-
-        const nextEntity = {
-          operations: records.map(({ operation }) => operation),
-          messages: records.map(({ message }) => message)
-        }
-        const entry = isIdentity
-          ? await buildIdentityFromOperations(nextEntity.operations, id as NameKey, true)
-          : await buildItemFromOperations(nextEntity.operations, id)
-        const entryWithMessages = { ...entry, messages: nextEntity.messages }
-        response.push(entryWithMessages)
       }
 
-      return ctx.json(response)
+      return ctx.json(await withMessages(response, ctx.get("operationStore")))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       return ctx.json({ error: errorMessage }, 400)

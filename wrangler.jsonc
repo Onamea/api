@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "onamea-api",
-  "main": "app.ts",
+  "name": "api",
+  "main": "worker.ts",
   "compatibility_date": "2026-10-26",
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
@@ -23,5 +23,18 @@
       "binding": "ONAMEA_KV",
       "id": "203d5ddf319e411d9796042ac6d64210"
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  }
 }

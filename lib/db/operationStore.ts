@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto"
+import { isNameKey } from "@onamea/types"
 import type { Message, Operation } from "@onamea/crdt"
+import { isMessage, isSignedByOwner, parseRawOperation } from "@onamea/crdt"
 
 export type StoredOperationMessage = {
   operation: Operation
@@ -13,12 +16,14 @@ export type AppendResult = {
   becameIdentity: boolean
 }
 
-interface SqlCursor<Row> {
+type SqlStorageValue = string | number | ArrayBuffer | null
+
+interface SqlCursor<Row extends Record<string, SqlStorageValue>> {
   toArray(): Row[]
 }
 
 interface SqlStorage {
-  exec<Row extends Record<string, unknown> = Record<string, unknown>>(
+  exec<Row extends Record<string, SqlStorageValue> = Record<string, SqlStorageValue>>(
     query: string,
     ...bindings: (string | number)[]
   ): SqlCursor<Row>
@@ -31,21 +36,41 @@ interface OperationStoreState {
   }
 }
 
-interface DurableObjectStub {
-  fetch(input: Request | string | URL, init?: RequestInit): Promise<Response>
+export interface OperationStoreStub {
+  append(messages: Message[]): Promise<AppendResult>
+  getMessages(): Promise<Message[]>
 }
 
 export interface DurableObjectIdLike {}
 
 export interface OperationStoreNamespace {
   idFromName(name: string): DurableObjectIdLike
-  get(id: DurableObjectIdLike): DurableObjectStub
+  get(id: DurableObjectIdLike): OperationStoreStub
 }
 
-type OperationRow = { hash: string; operation_json: string }
-type MessageRow = { operation_hash: string; message_json: string }
+type MessageRow = { message_key: string; message_json: string }
 
-export class OperationStore {
+const messageKey = (message: Message): string =>
+  createHash("sha256")
+    .update(JSON.stringify([message.raw, message.cryptoName, message.publicKey, message.signature]), "utf8")
+    .digest("hex")
+
+const toStoredRecords = async (messages: Message[]): Promise<StoredOperationMessage[]> =>
+  await Promise.all(
+    messages.map(async message => {
+      const operation = await parseRawOperation(message.raw)
+      return {
+        operation,
+        message,
+        isOwnerSigned: isNameKey(operation.id) && (await isSignedByOwner(message))
+      }
+    })
+  )
+
+const hasOwnerSignedCreate = (records: StoredOperationMessage[]): boolean =>
+  records.some(({ operation, isOwnerSigned }) => isOwnerSigned && operation.type === "CREATE")
+
+export class OperationStoreCore {
   private readonly state: OperationStoreState
   private readonly sql: SqlStorage
 
@@ -53,162 +78,97 @@ export class OperationStore {
     this.state = state
     this.sql = state.storage.sql
     this.sql.exec(`
-      CREATE TABLE IF NOT EXISTS operations (
-        hash TEXT PRIMARY KEY,
-        operation_json TEXT NOT NULL
-      )
-    `)
-    this.sql.exec(`
       CREATE TABLE IF NOT EXISTS messages (
-        operation_hash TEXT NOT NULL,
-        crypto_name TEXT NOT NULL,
-        public_key TEXT NOT NULL,
-        signature TEXT NOT NULL,
-        owner_signed INTEGER NOT NULL DEFAULT 0,
-        message_json TEXT NOT NULL,
-        PRIMARY KEY (operation_hash, crypto_name, public_key, signature)
+        message_key TEXT PRIMARY KEY,
+        message_json TEXT NOT NULL
       )
     `)
-    const messageColumns = this.sql.exec<{ name: string }>("PRAGMA table_info(messages)").toArray()
-    if (messageColumns.some(({ name }) => name === "owner_signed") === false) {
-      this.sql.exec("ALTER TABLE messages ADD COLUMN owner_signed INTEGER NOT NULL DEFAULT 0")
+  }
+
+  async append(messages: Message[]): Promise<AppendResult> {
+    if (Array.isArray(messages) === false || messages.length === 0 || messages.every(isMessage) === false) {
+      throw new Error("Invalid Messages")
+    }
+
+    const incomingRecords = await toStoredRecords(messages)
+    const entityId = incomingRecords[0].operation.id
+    if (incomingRecords.some(({ operation }) => operation.id !== entityId)) {
+      throw new Error("All messages must belong to one entity")
+    }
+
+    const existingRecords = await this.getRecords()
+    if (existingRecords.some(({ operation }) => operation.id !== entityId)) {
+      throw new Error("Messages must belong to one entity")
+    }
+    const wasIdentity = hasOwnerSignedCreate(existingRecords)
+    const hasCreate = existingRecords.some(({ operation }) => operation.type === "CREATE")
+    const { added } = this.state.storage.transactionSync(() => {
+      if (hasCreate === false && incomingRecords.some(({ operation }) => operation.type === "CREATE") === false) {
+        throw new Error(`Entity ${entityId} does not exist and no CREATE operation was supplied`)
+      }
+
+      const addedRecords: StoredOperationMessage[] = []
+      for (const record of incomingRecords) {
+        const exists =
+          this.sql
+            .exec<{ found: number }>(
+              "SELECT 1 AS found FROM messages WHERE message_key = ? LIMIT 1",
+              messageKey(record.message)
+            )
+            .toArray().length > 0
+        if (exists) {
+          continue
+        }
+
+        this.sql.exec(
+          "INSERT INTO messages (message_key, message_json) VALUES (?, ?)",
+          messageKey(record.message),
+          JSON.stringify(record.message)
+        )
+        addedRecords.push(record)
+      }
+      return { added: addedRecords }
+    })
+
+    const storedRecords = await this.getRecords()
+    const isIdentity = hasOwnerSignedCreate(storedRecords)
+
+    return {
+      records: storedRecords,
+      added,
+      isIdentity,
+      becameIdentity: isIdentity && !wasIdentity
     }
   }
 
-  async fetch(request: Request): Promise<Response> {
-    if (request.method !== "POST" || new URL(request.url).pathname !== "/append") {
-      return new Response("Not found", { status: 404 })
-    }
-
-    try {
-      const payload: unknown = await request.json()
-      if (
-        Array.isArray(payload) === false ||
-        payload.length === 0 ||
-        payload.some(
-          record => typeof record !== "object" || record === null || !("operation" in record) || !("message" in record)
-        )
-      ) {
-        return Response.json({ error: "Invalid operation records" }, { status: 400 })
-      }
-
-      const incomingRecords = payload as StoredOperationMessage[]
-      const entityId = incomingRecords[0].operation.id
-      if (incomingRecords.some(({ operation }) => operation.id !== entityId)) {
-        return Response.json({ error: "All records must belong to one entity" }, { status: 400 })
-      }
-
-      const { added, isIdentity, becameIdentity } = this.state.storage.transactionSync(() => {
-        const wasIdentity = this.hasOwnerSignedCreate()
-        const existingOperations = this.sql
-          .exec<{ operation_json: string }>("SELECT operation_json FROM operations")
-          .toArray()
-        const hasCreate = existingOperations.some(
-          ({ operation_json }) => (JSON.parse(operation_json) as Operation).type === "CREATE"
-        )
-        if (hasCreate === false && incomingRecords.some(({ operation }) => operation.type === "CREATE") === false) {
-          throw new Error(`Entity ${entityId} does not exist and no CREATE operation was supplied`)
-        }
-
-        const addedRecords: StoredOperationMessage[] = []
-        for (const record of incomingRecords) {
-          const { operation, message } = record
-          const exists =
-            this.sql
-              .exec<{ found: number }>(
-                `SELECT 1 AS found FROM messages
-             WHERE operation_hash = ? AND crypto_name = ? AND public_key = ? AND signature = ?
-             LIMIT 1`,
-                operation.hash,
-                message.cryptoName,
-                message.publicKey,
-                message.signature
-              )
-              .toArray().length > 0
-          if (exists) {
-            if (record.isOwnerSigned) {
-              this.sql.exec(
-                `UPDATE messages SET owner_signed = 1
-                 WHERE operation_hash = ? AND crypto_name = ? AND public_key = ? AND signature = ?`,
-                operation.hash,
-                message.cryptoName,
-                message.publicKey,
-                message.signature
-              )
-            }
-            continue
-          }
-
-          this.sql.exec(
-            "INSERT OR IGNORE INTO operations (hash, operation_json) VALUES (?, ?)",
-            operation.hash,
-            JSON.stringify(operation)
-          )
-          this.sql.exec(
-            `INSERT INTO messages (operation_hash, crypto_name, public_key, signature, owner_signed, message_json)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            operation.hash,
-            message.cryptoName,
-            message.publicKey,
-            message.signature,
-            record.isOwnerSigned ? 1 : 0,
-            JSON.stringify(message)
-          )
-          addedRecords.push(record)
-        }
-        const isIdentity = this.hasOwnerSignedCreate()
-        return { added: addedRecords, isIdentity, becameIdentity: isIdentity && !wasIdentity }
-      })
-
-      const operations = new Map(
-        this.sql
-          .exec<OperationRow>("SELECT hash, operation_json FROM operations")
-          .toArray()
-          .map(row => [row.hash, JSON.parse(row.operation_json) as Operation])
-      )
-      const storedRecords: StoredOperationMessage[] = this.sql
-        .exec<MessageRow & { owner_signed: number }>(
-          `SELECT operation_hash, message_json, owner_signed FROM messages
-           ORDER BY operation_hash, crypto_name, public_key, signature`
-        )
-        .toArray()
-        .map(row => ({
-          operation: operations.get(row.operation_hash)!,
-          message: JSON.parse(row.message_json) as Message,
-          isOwnerSigned: row.owner_signed === 1
-        }))
-
-      return Response.json({ records: storedRecords, added, isIdentity, becameIdentity } satisfies AppendResult)
-    } catch (error) {
-      return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 400 })
-    }
+  private async getRecords(): Promise<StoredOperationMessage[]> {
+    const messages = this.getMessages()
+    const records = await toStoredRecords(messages)
+    return records.sort(
+      (left, right) =>
+        left.operation.hash.localeCompare(right.operation.hash) ||
+        left.message.cryptoName.localeCompare(right.message.cryptoName) ||
+        left.message.publicKey.localeCompare(right.message.publicKey) ||
+        left.message.signature.localeCompare(right.message.signature)
+    )
   }
 
-  private hasOwnerSignedCreate(): boolean {
+  getMessages(): Message[] {
     return this.sql
-      .exec<{ operation_json: string }>(
-        `SELECT operations.operation_json
-         FROM operations
-         JOIN messages ON messages.operation_hash = operations.hash
-         WHERE messages.owner_signed = 1`
-      )
+      .exec<MessageRow>("SELECT message_key, message_json FROM messages ORDER BY message_key")
       .toArray()
-      .some(({ operation_json }) => (JSON.parse(operation_json) as Operation).type === "CREATE")
+      .map(({ message_json }) => JSON.parse(message_json) as Message)
   }
 }
 
 export const createOperationStore = (namespace: OperationStoreNamespace) => ({
-  append: async (id: string, records: StoredOperationMessage[]): Promise<AppendResult> => {
+  append: async (id: string, messages: Message[]): Promise<AppendResult> => {
     const objectId = namespace.idFromName(id)
-    const response = await namespace.get(objectId).fetch("https://operation-store/append", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(records)
-    })
-    const result = (await response.json()) as AppendResult | { error?: string }
-    if (!response.ok) {
-      throw new Error("error" in result ? (result.error ?? "Operation append failed") : "Operation append failed")
-    }
-    return result as AppendResult
+    return await namespace.get(objectId).append(messages)
+  },
+
+  getMessages: async (id: string): Promise<Message[]> => {
+    const objectId = namespace.idFromName(id)
+    return await namespace.get(objectId).getMessages()
   }
 })

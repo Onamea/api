@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import type { AppEnv } from "./lib/env.ts"
 import { createWorkersKv } from "./lib/db/workersKv.ts"
-import { createOperationStore, OperationStore } from "./lib/db/operationStore.ts"
+import { createOperationStore } from "./lib/db/operationStore.ts"
 import routes from "./endpoints/routes.ts"
 import CORS from "./endpoints/middleware/CORS.ts"
 import errorHandling from "./endpoints/middleware/errorHandling.ts"
@@ -45,6 +45,3 @@ app.get(routes.GET_ME, getMe)
 app.post(routes.POST, post)
 
 export default app
-
-// Wrangler resolves the Durable Object class from the Worker entry point.
-export { OperationStore }

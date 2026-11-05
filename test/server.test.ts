@@ -1,16 +1,18 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { keyPairFromPrivateKey } from "@onamea/types"
+import { isNameKey, keyPairFromPrivateKey } from "@onamea/types"
 import {
   createCreateOperation,
   createSetOperation,
   signMessage,
   toRawOperation,
-  isCreateIdentityMessage
+  isSignedByOwner,
+  parseRawOperation
 } from "@onamea/crdt"
+import type { Message } from "@onamea/crdt"
 import app from "../app.ts"
 import type { WorkersKVNamespace } from "../lib/db/workersKv.ts"
-import type { OperationStoreNamespace, StoredOperationMessage } from "../lib/db/operationStore.ts"
+import type { AppendResult, OperationStoreNamespace, StoredOperationMessage } from "../lib/db/operationStore.ts"
 import meMessage from "../config/me.json" with { type: "json" }
 import { cryptoName, privateKey } from "./data.mock.ts"
 
@@ -18,13 +20,19 @@ const operationStores = new WeakMap<WorkersKVNamespace, OperationStoreNamespace>
 
 const createMemoryOperationStore = (): OperationStoreNamespace => {
   const names = new WeakMap<object, string>()
-  const entities = new Map<string, StoredOperationMessage[]>()
-  const hasOwnerSignedCreate = async (records: StoredOperationMessage[]) => {
-    for (const { message } of records) {
-      if (await isCreateIdentityMessage(message)) return true
-    }
-    return false
-  }
+  const entities = new Map<string, Message[]>()
+  const pendingWrites = new Map<string, Promise<void>>()
+  const toRecords = async (messages: Message[]): Promise<StoredOperationMessage[]> =>
+    await Promise.all(
+      messages.map(async message => {
+        const operation = await parseRawOperation(message.raw)
+        return {
+          operation,
+          message,
+          isOwnerSigned: isNameKey(operation.id) && (await isSignedByOwner(message))
+        }
+      })
+    )
   return {
     idFromName: name => {
       const id = {}
@@ -32,27 +40,44 @@ const createMemoryOperationStore = (): OperationStoreNamespace => {
       return id
     },
     get: id => ({
-      fetch: async (input, init) => {
-        const request = new Request(input, init)
-        const incoming = (await request.json()) as StoredOperationMessage[]
+      getMessages: async () => [...(entities.get(names.get(id as object)!) ?? [])],
+      append: async (incoming: Message[]): Promise<AppendResult> => {
         const entityId = names.get(id as object)!
-        const existing = entities.get(entityId) ?? []
-        const wasIdentity = await hasOwnerSignedCreate(existing)
-        const existingMessageKeys = new Set(
-          existing.map(({ operation, message }) =>
-            JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+        const incomingRecords = await toRecords(incoming)
+        const previousWrite = pendingWrites.get(entityId) ?? Promise.resolve()
+        let releaseWrite!: () => void
+        const currentWrite = new Promise<void>(resolve => (releaseWrite = resolve))
+        pendingWrites.set(entityId, currentWrite)
+        await previousWrite
+        try {
+          const existing = await toRecords(entities.get(entityId) ?? [])
+          const wasIdentity = existing.some(
+            ({ operation, isOwnerSigned }) => isOwnerSigned && operation.type === "CREATE"
           )
-        )
-        const added = incoming.filter(({ operation, message }) => {
-          const key = JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
-          if (existingMessageKeys.has(key)) return false
-          existingMessageKeys.add(key)
-          return true
-        })
-        const records = [...existing, ...added]
-        entities.set(entityId, records)
-        const isIdentity = await hasOwnerSignedCreate(records)
-        return Response.json({ records, added, isIdentity, becameIdentity: isIdentity && !wasIdentity })
+          const existingMessageKeys = new Set(
+            existing.map(({ operation, message }) =>
+              JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+            )
+          )
+          const added = incomingRecords.filter(({ operation, message }) => {
+            const key = JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+            if (existingMessageKeys.has(key)) return false
+            existingMessageKeys.add(key)
+            return true
+          })
+          const records = [...existing, ...added]
+          entities.set(
+            entityId,
+            records.map(({ message }) => message)
+          )
+          const isIdentity = records.some(
+            ({ operation, isOwnerSigned }) => isOwnerSigned && operation.type === "CREATE"
+          )
+          return { records, added, isIdentity, becameIdentity: isIdentity && !wasIdentity }
+        } finally {
+          releaseWrite()
+          if (pendingWrites.get(entityId) === currentWrite) pendingWrites.delete(entityId)
+        }
       }
     })
   }
@@ -190,7 +215,9 @@ test("POST / two CREATE operations", async () => {
 
   const itemResponse = await request(kv, "/items/id/Item-1")
   assert.equal(itemResponse.status, 200)
-  assert.equal(((await itemResponse.json()) as { id: string }).id, "Item-1")
+  const item = (await itemResponse.json()) as { id: string; messages: unknown[] }
+  assert.equal(item.id, "Item-1")
+  assert.equal(item.messages.length, 1)
 })
 
 test("POST / accepts IDs matching object prototype properties", async () => {
@@ -334,6 +361,27 @@ test("POST / classifies a shared NameKey CREATE as an Identity", async () => {
   assert.equal(identityResponse.status, 200)
   const identity = (await identityResponse.json()) as { messages: unknown[] }
   assert.equal(identity.messages.length, 2)
+
+  const nameResponse = await request(kv, "/identities/name/Vani")
+  assert.equal(nameResponse.status, 200)
+  const identitiesByName = (await nameResponse.json()) as { id: string; messages: unknown[] }[]
+  assert.deepEqual(
+    identitiesByName.map(({ id }) => id),
+    [id]
+  )
+  assert.equal(identitiesByName[0].messages.length, 2)
+
+  const projectionKeys = await kv.list({ prefix: "entity-projections/", limit: 1000 })
+  assert.equal(projectionKeys.keys.length, 1)
+  const projections = await Promise.all(
+    projectionKeys.keys.map(
+      async ({ name }) =>
+        (await kv.get(name, "json")) as { isIdentity: boolean; entity: { id: string; messages?: unknown[] } }
+    )
+  )
+  assert.ok(projections.some(projection => projection.isIdentity && projection.entity.id === id))
+  assert.ok(projections.every(projection => !("messages" in projection.entity)))
+  assert.equal((await kv.list({ prefix: "identity-index/", limit: 1000 })).keys.length, 1)
 })
 
 test("POST / reports and retries a failed identity projection", async () => {
@@ -420,4 +468,8 @@ test("GET /search/:term finds Items and Identities by id or body", async () => {
 
   const noMatchesResponse = await request(kv, "/search/no-such-entity")
   assert.deepEqual(await noMatchesResponse.json(), [])
+
+  const oversizedResponse = await request(kv, `/search/${"x".repeat(257)}`)
+  assert.equal(oversizedResponse.status, 400)
+  assert.deepEqual(await oversizedResponse.json(), { error: "Search term must be 256 characters or fewer" })
 })

@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 import { isId } from "@onamea/crdt"
 import type { AppEnv } from "../../lib/env.ts"
+import { withMessage } from "../../lib/withMessages.ts"
 import routes from "../routes.ts"
 
 export default async (ctx: Context<AppEnv, typeof routes.GET_ITEMS_BY_ID>) => {
@@ -14,5 +15,5 @@ export default async (ctx: Context<AppEnv, typeof routes.GET_ITEMS_BY_ID>) => {
   if (item === undefined) {
     return ctx.json({ error: `No Item with Id: ${id} found` }, 404)
   }
-  return ctx.json(item)
+  return ctx.json(await withMessage(item, ctx.get("operationStore")))
 }

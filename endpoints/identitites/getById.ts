@@ -1,6 +1,7 @@
 import type { Context } from "hono"
 import { isNameKey } from "@onamea/types"
 import type { AppEnv } from "../../lib/env.ts"
+import { withMessage } from "../../lib/withMessages.ts"
 import routes from "../routes.ts"
 
 export default async (ctx: Context<AppEnv, typeof routes.GET_IDENTITIES_BY_ID>) => {
@@ -15,5 +16,5 @@ export default async (ctx: Context<AppEnv, typeof routes.GET_IDENTITIES_BY_ID>) 
     return ctx.json({ error: `No Identity with Id: ${id} found` }, 404)
   }
 
-  return ctx.json(identity)
+  return ctx.json(await withMessage(identity, ctx.get("operationStore")))
 }
