@@ -42,6 +42,13 @@ const createMemoryOperationStore = (): OperationStoreNamespace => {
     },
     get: id => ({
       getMessages: async () => [...(entities.get(names.get(id as object)!) ?? [])],
+      getMessage: async messageId => {
+        const messages = entities.get(names.get(id as object)!) ?? []
+        for (const message of messages) {
+          if ((await getMessageId(message)) === messageId) return message
+        }
+        return undefined
+      },
       append: async (incoming: Message[]): Promise<AppendResult> => {
         const entityId = names.get(id as object)!
         const incomingRecords = await toRecords(incoming)
@@ -128,6 +135,25 @@ test("GET /me includes its messages", async () => {
   assert.equal(response.status, 200)
   const body = (await response.json()) as { messages: unknown[] }
   assert.equal(body.messages.length, 1)
+})
+
+test("GET /messages/:id returns a message by hash", async () => {
+  const kv = createMemoryKv()
+  const message = meMessage[0]! as Message
+  const postResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(meMessage)
+  })
+  assert.equal(postResponse.status, 200)
+
+  const messageId = await getMessageId(message)
+  const response = await request(kv, `/messages/${messageId}`)
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), message)
+
+  const missingResponse = await request(kv, `/messages/${"0".repeat(64)}`)
+  assert.equal(missingResponse.status, 404)
 })
 
 test("POST / single operation", async () => {
@@ -394,8 +420,11 @@ test("POST / reports and retries a failed identity projection", async () => {
   const message = await signMessage({ raw: toRawOperation(operation) }, keyPair)
   const originalPut = kv.put.bind(kv)
 
-  kv.put = async () => {
-    throw new Error("KV unavailable")
+  kv.put = async (key, value) => {
+    if (key.startsWith("entity-projections/")) {
+      throw new Error("KV unavailable")
+    }
+    await originalPut(key, value)
   }
   const failedResponse = await request(kv, "/", {
     method: "POST",

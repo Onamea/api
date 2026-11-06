@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
 import type { FingerprintDisplay, Name, NameKey } from "@onamea/types"
 import { fingerprintDisplayStartsWith, nameKeyToFingerprintDisplay, parseNameKey } from "@onamea/types"
-import type { Id, Identity, Item } from "@onamea/crdt"
-import { buildItemFromOperations, isId } from "@onamea/crdt"
+import type { Id, Identity, Item, Message, MessageId } from "@onamea/crdt"
+import { buildItemFromOperations, getMessageId, isId } from "@onamea/crdt"
 import type { KVNamespace } from "@cloudflare/workers-types"
 
 export type WorkersKVNamespace = KVNamespace
@@ -11,6 +11,7 @@ export type EntityProjection = { isIdentity: true; entity: Identity } | { isIden
 
 const IDENTITY_INDEX_PREFIX = "identity-index/"
 const ENTITY_PROJECTION_PREFIX = "entity-projections/"
+const MESSAGE_INDEX_PREFIX = "message-index/"
 const PAGE_SIZE = 1000
 
 const hash = (value: string): string => createHash("sha256").update(value, "utf8").digest("hex")
@@ -21,6 +22,7 @@ const identityIndexPrefix = (name?: Name): string =>
 const identityIndexKey = (name: Name, id: NameKey): string => `${identityIndexPrefix(name)}${hash(id)}`
 
 const entityProjectionKey = (id: Id): string => `${ENTITY_PROJECTION_PREFIX}${hash(id)}`
+const messageIndexKey = (id: MessageId): string => `${MESSAGE_INDEX_PREFIX}${id}`
 
 const listValues = async <T>(kv: WorkersKVNamespace, prefix: string): Promise<T[]> => {
   const values: T[] = []
@@ -65,6 +67,21 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => {
 
   return {
     projectEntity: writeProjection,
+
+    indexMessages: async (id: Id, messages: Message[]): Promise<void> => {
+      await Promise.all(
+        messages.map(async message => {
+          const messageId = await getMessageId(message)
+          await kv.put(messageIndexKey(messageId), id)
+        })
+      )
+    },
+
+    getEntityIdByMessageId: async (id: MessageId): Promise<Id | undefined> =>
+      (await kv.get(messageIndexKey(id), "text")) ?? undefined,
+
+    listEntityProjections: async (): Promise<EntityProjection[]> =>
+      await listValues<EntityProjection>(kv, ENTITY_PROJECTION_PREFIX),
 
     listIdentities: async (): Promise<Identity[]> => {
       const ids = await listValues<NameKey>(kv, identityIndexPrefix())

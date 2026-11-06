@@ -1,5 +1,5 @@
 import { isNameKey } from "@onamea/types"
-import type { Message, Operation } from "@onamea/crdt"
+import type { Message, MessageId, Operation } from "@onamea/crdt"
 import { getMessageId, isMessage, isSignedByOwner, parseRawOperation } from "@onamea/crdt"
 import { migrateMessageIds } from "./migrations/001-message-id.ts"
 
@@ -38,6 +38,7 @@ interface OperationStoreState {
 
 export interface OperationStoreStub {
   append(messages: Message[]): Promise<AppendResult>
+  getMessage(messageId: MessageId): Promise<Message | undefined>
   getMessages(): Promise<Message[]>
 }
 
@@ -174,6 +175,13 @@ export class OperationStoreCore {
   getMessages(): Message[] {
     return this.getMessageRows().map(({ message_json }) => JSON.parse(message_json) as Message)
   }
+
+  getMessage(messageId: MessageId): Message | undefined {
+    const row = this.sql
+      .exec<{ message_json: string }>("SELECT message_json FROM messages WHERE message_key = ? LIMIT 1", messageId)
+      .toArray()[0]
+    return row === undefined ? undefined : (JSON.parse(row.message_json) as Message)
+  }
 }
 
 export const createOperationStore = (namespace: OperationStoreNamespace) => ({
@@ -185,5 +193,10 @@ export const createOperationStore = (namespace: OperationStoreNamespace) => ({
   getMessages: async (id: string): Promise<Message[]> => {
     const objectId = namespace.idFromName(id)
     return await namespace.get(objectId).getMessages()
+  },
+
+  getMessage: async (id: string, messageId: MessageId): Promise<Message | undefined> => {
+    const objectId = namespace.idFromName(id)
+    return await namespace.get(objectId).getMessage(messageId)
   }
 })

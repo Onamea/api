@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { DurableObject } from "cloudflare:workers"
-import type { Message } from "@onamea/crdt"
+import type { Message, MessageId } from "@onamea/crdt"
 import { OperationStoreCore, type AppendResult } from "./operationStore.ts"
 
 type OperationStoreContext = ConstructorParameters<typeof DurableObject>[0]
@@ -21,5 +21,9 @@ export class OperationStoreV2 extends DurableObject<unknown> {
 
   async getMessages(): Promise<Message[]> {
     return this.store.getMessages()
+  }
+
+  async getMessage(messageId: MessageId): Promise<Message | undefined> {
+    return this.store.getMessage(messageId)
   }
 }

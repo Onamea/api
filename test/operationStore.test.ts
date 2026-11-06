@@ -24,6 +24,9 @@ const createSql = (initialRows: MessageRow[]) => {
         result = [...rows]
           .sort(([left], [right]) => left.localeCompare(right))
           .map(([message_key, message_json]) => ({ message_key, message_json }))
+      } else if (query.startsWith("SELECT message_json FROM messages WHERE message_key")) {
+        const message_json = rows.get(String(bindings[0]))
+        if (message_json !== undefined) result = [{ message_json }]
       } else if (query.startsWith("SELECT 1 AS found")) {
         if (rows.has(String(bindings[0]))) result = [{ found: 1 }]
       } else if (query.startsWith("INSERT OR IGNORE")) {
@@ -70,4 +73,6 @@ test("initialize migrates legacy message keys once", async () => {
   const append = await store.append([message])
   assert.equal(append.added.length, 0)
   assert.equal(rows.size, 1)
+  assert.deepEqual(store.getMessage(messageId), JSON.parse(JSON.stringify(message)))
+  assert.equal(store.getMessage("0".repeat(64)), undefined)
 })

@@ -5,5 +5,6 @@ export default {
   GET_ITEMS_BY_ID: "/items/id/:id",
   GET_SEARCH: "/search/:term",
   GET_ME: "/me",
-  POST: "/"
+  POST: "/",
+  GET_MESSAGES: "/messages/:id"
 } as const

@@ -40,6 +40,16 @@ export default async (ctx: Context<AppEnv, typeof routes.POST>) => {
         const operations = [...new Map(records.map(({ operation }) => [operation.hash, operation])).values()]
 
         try {
+          await db.indexMessages(
+            id,
+            records.map(({ message }) => message)
+          )
+        } catch (error) {
+          console.error("Failed to index messages in KV", error)
+          return ctx.json({ error: error instanceof Error ? error.message : String(error) }, 500)
+        }
+
+        try {
           if (isIdentity) {
             const entity = await buildIdentityFromOperations(operations, id as NameKey, true)
             await db.projectEntity(id, { isIdentity: true, entity })
