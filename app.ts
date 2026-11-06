@@ -11,6 +11,7 @@ import getByName from "./endpoints/identitites/getByName.ts"
 import getMe from "./endpoints/me/get.ts"
 import post from "./endpoints/messages/post.ts"
 import getMessages from "./endpoints/messages/get.ts"
+import getAllItems from "./endpoints/items/getAll.ts"
 import getItemById from "./endpoints/items/getById.ts"
 import search from "./endpoints/search.ts"
 
@@ -33,7 +34,10 @@ app.get(routes.GET_IDENTITIES_BY_ID, getById)
 // GET /identities/{name}
 app.get(routes.GET_IDENTITIES_BY_NAME, getByName)
 
-// GET /items/{id}
+// GET /items
+app.get(routes.GET_ITEMS, getAllItems)
+
+// GET /items/id/{id}
 app.get(routes.GET_ITEMS_BY_ID, getItemById)
 
 // GET /search/{term}

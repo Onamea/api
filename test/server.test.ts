@@ -248,6 +248,32 @@ test("POST / two CREATE operations", async () => {
   assert.equal(item.messages.length, 1)
 })
 
+test("GET /items returns items with their messages", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const identityOperation = await createCreateOperation("Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02")
+  const itemOperation = await createCreateOperation("Item-1")
+  const messages = await Promise.all(
+    [identityOperation, itemOperation].map(
+      async operation => await signMessage({ raw: toRawOperation(operation) }, keyPair)
+    )
+  )
+
+  const postResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  })
+  assert.equal(postResponse.status, 200)
+
+  const response = await request(kv, "/items")
+  assert.equal(response.status, 200)
+  const body = (await response.json()) as { id: string; messages: unknown[] }[]
+  assert.equal(body.length, 1)
+  assert.equal(body[0]!.id, "Item-1")
+  assert.equal(body[0]!.messages.length, 1)
+})
+
 test("POST / accepts IDs matching object prototype properties", async () => {
   const kv = createMemoryKv()
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
