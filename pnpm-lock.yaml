@@ -167,11 +167,11 @@ importers:
   .:
     dependencies:
       '@onamea/crdt':
-        specifier: ^0.6.5
-        version: 0.6.5
+        specifier: 0.6.6
+        version: 0.6.6
       '@onamea/types':
-        specifier: ^0.5.3
-        version: 0.5.3
+        specifier: 0.5.4
+        version: 0.5.4
       hono:
         specifier: ^4.13.13
         version: 4.13.13
@@ -581,11 +581,11 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@onamea/crdt@0.6.5':
-    resolution: {integrity: sha512-Jj3g059Hcs1XzW1VeaLqhUmTuHHFVq66gOyTeVUBxGxshQBuET8i0vQZOeFyMSgraEChcZ7uaGyjuZoYeJJ95A==}
+  '@onamea/crdt@0.6.6':
+    resolution: {integrity: sha512-6F8Fc+NmXPM+/b8n8GYmpobni5qzb0pQ1wctvwFbcLhVh18BhOv5MEl/OJYqh0594wRGurxrtAj2w+eh76zJBw==}
 
-  '@onamea/types@0.5.3':
-    resolution: {integrity: sha512-17u2pFcq59mp+l9HvoyiRwyidCvwKZuotURv3n6P52SJ8N3HD9Nk4xWnF6T1EVRMVAEASEovyB6stT7eppNCOQ==}
+  '@onamea/types@0.5.4':
+    resolution: {integrity: sha512-6hA4/JskVS+EXpWo6/3IzRs44o7Q00Q4TiKJs8dM5sh3HqmZSdonlelcg4jLsuozrhpuiFm9jpRFUaWkAHDKPA==}
 
   '@oxfmt/binding-android-arm-eabi@0.73.0':
     resolution: {integrity: sha512-dhunAdMbi/4o0Y66/+Wl6rpsNqpvE4i26Qw6bB77A97L2lJoktWg6m+X9QOon8iOEEqzD9rEZqFi5uZ4oIzhCA==}
@@ -1345,11 +1345,11 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@onamea/crdt@0.6.5':
+  '@onamea/crdt@0.6.6':
     dependencies:
       '@cfworker/json-schema': 4.1.1
 
-  '@onamea/types@0.5.3': {}
+  '@onamea/types@0.5.4': {}
 
   '@oxfmt/binding-android-arm-eabi@0.73.0':
     optional: true

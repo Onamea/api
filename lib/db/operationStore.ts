@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto"
 import { isNameKey } from "@onamea/types"
 import type { Message, Operation } from "@onamea/crdt"
-import { isMessage, isSignedByOwner, parseRawOperation } from "@onamea/crdt"
+import { getMessageId, isMessage, isSignedByOwner, parseRawOperation } from "@onamea/crdt"
+import { migrateMessageIds } from "./migrations/001-message-id.ts"
 
 export type StoredOperationMessage = {
   operation: Operation
@@ -50,11 +50,6 @@ export interface OperationStoreNamespace {
 
 type MessageRow = { message_key: string; message_json: string }
 
-const messageKey = (message: Message): string =>
-  createHash("sha256")
-    .update(JSON.stringify([message.raw, message.cryptoName, message.publicKey, message.signature]), "utf8")
-    .digest("hex")
-
 const toStoredRecords = async (messages: Message[]): Promise<StoredOperationMessage[]> =>
   await Promise.all(
     messages.map(async message => {
@@ -83,6 +78,15 @@ export class OperationStoreCore {
         message_json TEXT NOT NULL
       )
     `)
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      )
+    `)
+  }
+
+  async initialize(): Promise<void> {
+    await migrateMessageIds(this.state.storage)
   }
 
   async append(messages: Message[]): Promise<AppendResult> {
@@ -96,36 +100,46 @@ export class OperationStoreCore {
       throw new Error("All messages must belong to one entity")
     }
 
-    const existingRecords = await this.getRecords()
+    const existingRows = this.getMessageRows()
+    const existingMessages = existingRows.map(({ message_json }) => JSON.parse(message_json) as Message)
+    const existingRecords = await toStoredRecords(existingMessages)
     if (existingRecords.some(({ operation }) => operation.id !== entityId)) {
       throw new Error("Messages must belong to one entity")
     }
     const wasIdentity = hasOwnerSignedCreate(existingRecords)
     const hasCreate = existingRecords.some(({ operation }) => operation.type === "CREATE")
+    const incomingMessageIds = await Promise.all(
+      incomingRecords.map(async ({ message }) => await getMessageId(message))
+    )
     const { added } = this.state.storage.transactionSync(() => {
       if (hasCreate === false && incomingRecords.some(({ operation }) => operation.type === "CREATE") === false) {
         throw new Error(`Entity ${entityId} does not exist and no CREATE operation was supplied`)
       }
 
+      const knownMessageIds = new Set(existingRows.map(({ message_key }) => message_key))
+
       const addedRecords: StoredOperationMessage[] = []
-      for (const record of incomingRecords) {
+      for (let index = 0; index < incomingRecords.length; index += 1) {
+        const record = incomingRecords[index]!
+        const messageId = incomingMessageIds[index]!
+        if (knownMessageIds.has(messageId)) continue
+
         const exists =
           this.sql
-            .exec<{ found: number }>(
-              "SELECT 1 AS found FROM messages WHERE message_key = ? LIMIT 1",
-              messageKey(record.message)
-            )
+            .exec<{ found: number }>("SELECT 1 AS found FROM messages WHERE message_key = ? LIMIT 1", messageId)
             .toArray().length > 0
         if (exists) {
+          knownMessageIds.add(messageId)
           continue
         }
 
         this.sql.exec(
           "INSERT INTO messages (message_key, message_json) VALUES (?, ?)",
-          messageKey(record.message),
+          messageId,
           JSON.stringify(record.message)
         )
         addedRecords.push(record)
+        knownMessageIds.add(messageId)
       }
       return { added: addedRecords }
     })
@@ -153,11 +167,12 @@ export class OperationStoreCore {
     )
   }
 
+  private getMessageRows(): MessageRow[] {
+    return this.sql.exec<MessageRow>("SELECT message_key, message_json FROM messages ORDER BY message_key").toArray()
+  }
+
   getMessages(): Message[] {
-    return this.sql
-      .exec<MessageRow>("SELECT message_key, message_json FROM messages ORDER BY message_key")
-      .toArray()
-      .map(({ message_json }) => JSON.parse(message_json) as Message)
+    return this.getMessageRows().map(({ message_json }) => JSON.parse(message_json) as Message)
   }
 }
 

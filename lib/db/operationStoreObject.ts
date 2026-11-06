@@ -12,6 +12,7 @@ export class OperationStoreV2 extends DurableObject<unknown> {
   constructor(ctx: OperationStoreContext, env: unknown) {
     super(ctx, env)
     this.store = new OperationStoreCore(ctx)
+    ctx.blockConcurrencyWhile(async () => await this.store.initialize())
   }
 
   async append(messages: Message[]): Promise<AppendResult> {

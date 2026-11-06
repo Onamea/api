@@ -15,8 +15,8 @@
     "clear:dev": "rm -rf .wrangler/state/*"
   },
   "dependencies": {
-    "@onamea/crdt": "^0.6.5",
-    "@onamea/types": "^0.5.3",
+    "@onamea/crdt": "0.6.6",
+    "@onamea/types": "0.5.4",
     "hono": "^4.13.13"
   },
   "devDependencies": {

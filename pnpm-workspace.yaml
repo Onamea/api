@@ -3,3 +3,5 @@ allowBuilds:
   workerd: false
 minimumReleaseAgeExclude:
   - "@jsr/onamea__crdt@0.6.5"
+  - "@onamea/types@0.5.4"
+  - "@onamea/crdt@0.6.6"

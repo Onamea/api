@@ -4,6 +4,7 @@ import { isNameKey, keyPairFromPrivateKey } from "@onamea/types"
 import {
   createCreateOperation,
   createSetOperation,
+  getMessageId,
   signMessage,
   toRawOperation,
   isSignedByOwner,
@@ -55,12 +56,13 @@ const createMemoryOperationStore = (): OperationStoreNamespace => {
             ({ operation, isOwnerSigned }) => isOwnerSigned && operation.type === "CREATE"
           )
           const existingMessageKeys = new Set(
-            existing.map(({ operation, message }) =>
-              JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
-            )
+            await Promise.all(existing.map(async ({ message }) => await getMessageId(message)))
           )
-          const added = incomingRecords.filter(({ operation, message }) => {
-            const key = JSON.stringify([operation.hash, message.cryptoName, message.publicKey, message.signature])
+          const incomingMessageKeys = await Promise.all(
+            incomingRecords.map(async ({ message }) => await getMessageId(message))
+          )
+          const added = incomingRecords.filter((_, index) => {
+            const key = incomingMessageKeys[index]!
             if (existingMessageKeys.has(key)) return false
             existingMessageKeys.add(key)
             return true
