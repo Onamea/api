@@ -24,6 +24,26 @@
       "id": "20f5e51c907c4d9290f93699efaf55b4"
     }
   ],
+  "env": {
+    "acceptance": {
+      "name": "api-acceptance",
+      "routes": [{ "pattern": "acceptance.api.onamea.com", "custom_domain": true }],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "OPERATION_STORE",
+            "class_name": "OperationStore"
+          }
+        ]
+      },
+      "kv_namespaces": [
+        {
+          "binding": "ENTITY_PROJECTIONS_KV",
+          "id": "dcc06717eef44b7c9b046fb9a434a4e8"
+        }
+      ]
+    }
+  },
   "observability": {
     "logs": {
       "enabled": true,
