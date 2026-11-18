@@ -5,7 +5,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(apiUrl.hostname)) {
   throw new Error("DEV_API_URL must point to a local Wrangler dev server")
 }
 
-const message: unknown = JSON.parse(await readFile(new URL("../config/me.json", import.meta.url), "utf8"))
+const message: unknown = JSON.parse(await readFile(new URL("../config/me.json", import.meta.url).pathname, "utf8"))
 const response = await fetch(new URL("/", apiUrl), {
   method: "POST",
   headers: { "Content-Type": "application/json" },
