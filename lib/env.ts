@@ -3,7 +3,7 @@ import type { createOperationStore, OperationStoreNamespace } from "./db/operati
 
 export type AppEnv = {
   Bindings: {
-    ONAMEA_KV: WorkersKVNamespace
+    ENTITY_PROJECTIONS_KV: WorkersKVNamespace
     OPERATION_STORE: OperationStoreNamespace
   }
   Variables: {

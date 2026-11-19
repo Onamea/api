@@ -19,7 +19,7 @@ const app = new Hono<AppEnv>()
 
 app.use("*", CORS)
 app.use("*", async (ctx, next) => {
-  ctx.set("db", createWorkersKv(ctx.env.ONAMEA_KV))
+  ctx.set("db", createWorkersKv(ctx.env.ENTITY_PROJECTIONS_KV))
   ctx.set("operationStore", createOperationStore(ctx.env.OPERATION_STORE))
   await next()
 })

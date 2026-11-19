@@ -8,28 +8,20 @@
     "bindings": [
       {
         "name": "OPERATION_STORE",
-        "class_name": "OperationStoreV2"
+        "class_name": "OperationStore"
       }
     ]
   },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["OperationStore"]
-    },
-    {
-      "tag": "v2",
-      "new_sqlite_classes": ["OperationStoreV2"]
-    },
-    {
-      "tag": "v3",
-      "deleted_classes": ["OperationStore"]
+  "exports": {
+    "OperationStore": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
-  ],
+  },
   "kv_namespaces": [
     {
-      "binding": "ONAMEA_KV",
-      "id": "203d5ddf319e411d9796042ac6d64210"
+      "binding": "ENTITY_PROJECTIONS_KV",
+      "id": "20f5e51c907c4d9290f93699efaf55b4"
     }
   ],
   "observability": {

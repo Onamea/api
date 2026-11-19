@@ -1,7 +1,6 @@
 import { isNameKey } from "@onamea/types"
 import type { Message, MessageId, Operation } from "@onamea/crdt"
 import { getMessageId, isMessage, isSignedByOwner, parseRawOperation } from "@onamea/crdt"
-import { migrateMessageIds } from "./migrations/001-message-id.ts"
 
 export type StoredOperationMessage = {
   operation: Operation
@@ -79,15 +78,6 @@ export class OperationStoreCore {
         message_json TEXT NOT NULL
       )
     `)
-    this.sql.exec(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        version INTEGER PRIMARY KEY
-      )
-    `)
-  }
-
-  async initialize(): Promise<void> {
-    await migrateMessageIds(this.state.storage)
   }
 
   async append(messages: Message[]): Promise<AppendResult> {

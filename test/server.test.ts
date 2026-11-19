@@ -120,7 +120,7 @@ const createMemoryKv = (): WorkersKVNamespace => {
 }
 
 const request = (kv: WorkersKVNamespace, path: string, init?: RequestInit) =>
-  app.request(path, init, { ONAMEA_KV: kv, OPERATION_STORE: operationStores.get(kv)! })
+  app.request(path, init, { ENTITY_PROJECTIONS_KV: kv, OPERATION_STORE: operationStores.get(kv)! })
 
 test("GET /me includes its messages", async () => {
   const kv = createMemoryKv()
