@@ -138,9 +138,10 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => {
       const normalizedTerm = term.toLowerCase()
       const projections = await listValues<EntityProjection>(kv, ENTITY_PROJECTION_PREFIX)
       return projections.filter(
-        ({ entity }) =>
+        ({ entity, isIdentity }) =>
           entity.id.toLowerCase().includes(normalizedTerm) ||
-          entity.body?.toLowerCase().includes(normalizedTerm) === true
+          entity.body?.toLowerCase().includes(normalizedTerm) === true ||
+          (isIdentity && entity.displayName?.toLowerCase().includes(normalizedTerm) === true)
       )
     },
 

@@ -572,7 +572,7 @@ test("POST / removes a revoked subkey index entry when retried after a failed in
   assert.equal((await kv.list({ prefix: "identity-subkey-index/", limit: 1000 })).keys.length, 0)
 })
 
-test("GET /search/:term finds Items and Identities by id or body", async () => {
+test("GET /search/:term finds Items and Identities by id, body, or display name", async () => {
   const kv = createMemoryKv()
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
   const identityId = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
@@ -594,6 +594,9 @@ test("GET /search/:term finds Items and Identities by id or body", async () => {
     body: JSON.stringify(messages)
   })
   assert.equal(createResponse.status, 200)
+  const created = (await createResponse.json()) as { id: string; displayName?: string }[]
+  const identityDisplayName = created.find(({ id }) => id === identityId)?.displayName
+  assert.ok(identityDisplayName)
 
   const bodyResponse = await request(kv, "/search/search")
   assert.equal(bodyResponse.status, 200)
@@ -615,6 +618,13 @@ test("GET /search/:term finds Items and Identities by id or body", async () => {
   const identityIdMatches = (await identityIdResponse.json()) as { id: string }[]
   assert.deepEqual(
     identityIdMatches.map(({ id }) => id),
+    [identityId]
+  )
+
+  const displayNameResponse = await request(kv, `/search/${encodeURIComponent(identityDisplayName)}`)
+  const displayNameMatches = (await displayNameResponse.json()) as { id: string }[]
+  assert.deepEqual(
+    displayNameMatches.map(({ id }) => id),
     [identityId]
   )
 
