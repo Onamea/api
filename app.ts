@@ -8,6 +8,7 @@ import errorHandling from "./endpoints/middleware/errorHandling.ts"
 import getAll from "./endpoints/identitites/getAll.ts"
 import getById from "./endpoints/identitites/getById.ts"
 import getByName from "./endpoints/identitites/getByName.ts"
+import getBySubKey from "./endpoints/identitites/getBySubKey.ts"
 import getMe from "./endpoints/me/get.ts"
 import post from "./endpoints/messages/post.ts"
 import getMessages from "./endpoints/messages/get.ts"
@@ -28,10 +29,13 @@ app.onError(errorHandling)
 // GET /identities
 app.get(routes.GET_IDENTITIES, getAll)
 
-// GET /identities/{id}
+// GET /identities/id/{id}
 app.get(routes.GET_IDENTITIES_BY_ID, getById)
 
-// GET /identities/{name}
+// GET /identities/subkey/{id}
+app.get(routes.GET_IDENTITIES_BY_SUBKEY, getBySubKey)
+
+// GET /identities/name/{name}
 app.get(routes.GET_IDENTITIES_BY_NAME, getByName)
 
 // GET /items

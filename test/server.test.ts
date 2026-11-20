@@ -1,8 +1,10 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { isNameKey, keyPairFromPrivateKey } from "@onamea/types"
+import { isNameKey, keyPairFromPrivateKey, publicKeyToNameKey } from "@onamea/types"
 import {
   createCreateOperation,
+  createGrantOperation,
+  createRevokeOperation,
   createSetOperation,
   getMessageId,
   signMessage,
@@ -101,6 +103,9 @@ const createMemoryKv = (): WorkersKVNamespace => {
     },
     put: async (key: string, value: string) => {
       entries.set(key, value)
+    },
+    delete: async (key: string) => {
+      entries.delete(key)
     },
     list: async ({ prefix, limit, cursor }: { prefix: string; limit: number; cursor?: string }) => {
       const keys = [...entries.keys()].filter(key => key.startsWith(prefix)).sort()
@@ -438,6 +443,58 @@ test("POST / classifies a shared NameKey CREATE as an Identity", async () => {
   assert.equal((await kv.list({ prefix: "identity-index/", limit: 1000 })).keys.length, 1)
 })
 
+test("GET /identities/subkey/:id returns identities that grant the subkey", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const identityId = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
+  const subKeyId = publicKeyToNameKey("Van", cryptoName, keyPair.publicKey)
+  const missingSubKeyId = publicKeyToNameKey("Va", cryptoName, keyPair.publicKey)
+  const createOperation = await createCreateOperation(identityId)
+  const grantOperation = await createGrantOperation(identityId, createOperation.hash, subKeyId)
+  const messages = await Promise.all(
+    [createOperation, grantOperation].map(
+      async operation => await signMessage({ raw: toRawOperation(operation) }, keyPair)
+    )
+  )
+
+  const postResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(messages)
+  })
+  assert.equal(postResponse.status, 200)
+
+  const response = await request(kv, `/identities/subkey/${encodeURIComponent(subKeyId)}`)
+  assert.equal(response.status, 200)
+  const body = (await response.json()) as { id: string; subKeys: { id: string }[]; messages: unknown[] }[]
+  assert.deepEqual(
+    body.map(({ id }) => id),
+    [identityId]
+  )
+  assert.equal(body[0]!.subKeys[0]!.id, subKeyId)
+  assert.equal(body[0]!.messages.length, 2)
+  assert.equal((await kv.list({ prefix: "identity-subkey-index/", limit: 1000 })).keys.length, 1)
+
+  const revokeOperation = await createRevokeOperation(identityId, grantOperation.hash)
+  const revokeMessage = await signMessage({ raw: toRawOperation(revokeOperation) }, keyPair)
+  const revokeResponse = await request(kv, "/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(revokeMessage)
+  })
+  assert.equal(revokeResponse.status, 200)
+
+  const revokedResponse = await request(kv, `/identities/subkey/${encodeURIComponent(subKeyId)}`)
+  assert.deepEqual(await revokedResponse.json(), [])
+  assert.equal((await kv.list({ prefix: "identity-subkey-index/", limit: 1000 })).keys.length, 0)
+
+  const missingResponse = await request(kv, `/identities/subkey/${encodeURIComponent(missingSubKeyId)}`)
+  assert.deepEqual(await missingResponse.json(), [])
+
+  const invalidResponse = await request(kv, "/identities/subkey/not-a-name-key")
+  assert.equal(invalidResponse.status, 400)
+})
+
 test("POST / reports and retries a failed identity projection", async () => {
   const kv = createMemoryKv()
   const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
@@ -475,6 +532,44 @@ test("POST / reports and retries a failed identity projection", async () => {
     identities.map(({ id }) => id),
     [id]
   )
+})
+
+test("POST / removes a revoked subkey index entry when retried after a failed index update", async () => {
+  const kv = createMemoryKv()
+  const keyPair = keyPairFromPrivateKey(cryptoName, privateKey)
+  const identityId = "Vani@46G1SR1HS4BH2QQXETN6H3T3R2UFD2AWUQEYVXPYTWEYYJN02"
+  const subKeyId = publicKeyToNameKey("Van", cryptoName, keyPair.publicKey)
+  const createOperation = await createCreateOperation(identityId)
+  const grantOperation = await createGrantOperation(identityId, createOperation.hash, subKeyId)
+  const grantMessages = await Promise.all(
+    [createOperation, grantOperation].map(
+      async operation => await signMessage({ raw: toRawOperation(operation) }, keyPair)
+    )
+  )
+  const revokeOperation = await createRevokeOperation(identityId, grantOperation.hash)
+  const revokeMessage = await signMessage({ raw: toRawOperation(revokeOperation) }, keyPair)
+  const post = async (body: unknown) =>
+    await request(kv, "/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+
+  assert.equal((await post(grantMessages)).status, 200)
+
+  const originalDelete = kv.delete.bind(kv)
+  kv.delete = async key => {
+    throw new Error(`KV unavailable: ${key}`)
+  }
+  const failedResponse = await post(revokeMessage)
+  kv.delete = originalDelete
+  assert.equal(failedResponse.status, 500)
+
+  assert.equal((await post(revokeMessage)).status, 200)
+
+  const response = await request(kv, `/identities/subkey/${encodeURIComponent(subKeyId)}`)
+  assert.deepEqual(await response.json(), [])
+  assert.equal((await kv.list({ prefix: "identity-subkey-index/", limit: 1000 })).keys.length, 0)
 })
 
 test("GET /search/:term finds Items and Identities by id or body", async () => {

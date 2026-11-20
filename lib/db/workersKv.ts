@@ -10,8 +10,9 @@ export type WorkersKVNamespace = KVNamespace
 export type EntityProjection = { isIdentity: true; entity: Identity } | { isIdentity: false; entity: Item }
 
 const IDENTITY_INDEX_PREFIX = "identity-index/"
-const ENTITY_PROJECTION_PREFIX = "entity-projections/"
+const IDENTITY_SUBKEY_INDEX_PREFIX = "identity-subkey-index/"
 const MESSAGE_INDEX_PREFIX = "message-index/"
+const ENTITY_PROJECTION_PREFIX = "entity-projections/"
 const PAGE_SIZE = 1000
 
 const hash = (value: string): string => createHash("sha256").update(value, "utf8").digest("hex")
@@ -21,8 +22,16 @@ const identityIndexPrefix = (name?: Name): string =>
 
 const identityIndexKey = (name: Name, id: NameKey): string => `${identityIndexPrefix(name)}${hash(id)}`
 
+const identitySubKeyIndexPrefix = (subKeyId: NameKey): string => `${IDENTITY_SUBKEY_INDEX_PREFIX}${hash(subKeyId)}/`
+
+const identitySubKeyIndexKey = (subKeyId: NameKey, identityId: NameKey): string =>
+  `${identitySubKeyIndexPrefix(subKeyId)}${hash(identityId)}`
+
 const entityProjectionKey = (id: Id): string => `${ENTITY_PROJECTION_PREFIX}${hash(id)}`
 const messageIndexKey = (id: MessageId): string => `${MESSAGE_INDEX_PREFIX}${id}`
+
+const getSubKeyIds = (projection?: EntityProjection): NameKey[] =>
+  projection?.isIdentity === true ? [...new Set((projection.entity.subKeys ?? []).map(({ id }) => id))] : []
 
 const listValues = async <T>(kv: WorkersKVNamespace, prefix: string): Promise<T[]> => {
   const values: T[] = []
@@ -48,11 +57,24 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => {
     (await kv.get<EntityProjection>(entityProjectionKey(id), "json")) ?? undefined
 
   const writeProjection = async (id: Id, projection: EntityProjection): Promise<void> => {
-    await kv.put(entityProjectionKey(id), JSON.stringify(projection))
-    if (projection.isIdentity) {
-      const [, name] = parseNameKey(projection.entity.id)
-      await kv.put(identityIndexKey(name, projection.entity.id), JSON.stringify(projection.entity.id))
+    if (projection.isIdentity === false) {
+      await kv.put(entityProjectionKey(id), JSON.stringify(projection))
+      return
     }
+
+    const previous = await readProjection(id)
+    const identity = projection.entity
+    const [, name] = parseNameKey(identity.id)
+    const subKeyIds = getSubKeyIds(projection)
+    const revokedSubKeyIds = getSubKeyIds(previous).filter(subKeyId => subKeyIds.includes(subKeyId) === false)
+
+    await Promise.all([
+      kv.put(identityIndexKey(name, identity.id), JSON.stringify(identity.id)),
+      ...subKeyIds.map(subKeyId => kv.put(identitySubKeyIndexKey(subKeyId, identity.id), JSON.stringify(identity.id))),
+      ...revokedSubKeyIds.map(subKeyId => kv.delete(identitySubKeyIndexKey(subKeyId, identity.id)))
+    ])
+    // Written last so a retry after a failed index update still sees the previous subkeys
+    await kv.put(entityProjectionKey(id), JSON.stringify(projection))
   }
 
   const getProjectionByIdentityIds = async (ids: NameKey[]): Promise<Identity[]> => {
@@ -85,6 +107,11 @@ export const createWorkersKv = (kv: WorkersKVNamespace) => {
 
     listIdentities: async (): Promise<Identity[]> => {
       const ids = await listValues<NameKey>(kv, identityIndexPrefix())
+      return await getProjectionByIdentityIds(ids)
+    },
+
+    findIdentitiesBySubKey: async (subKeyId: NameKey): Promise<Identity[]> => {
+      const ids = await listValues<NameKey>(kv, identitySubKeyIndexPrefix(subKeyId))
       return await getProjectionByIdentityIds(ids)
     },
 
